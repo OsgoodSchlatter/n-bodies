@@ -1,0 +1,6 @@
+
+--Cette ligne, et les suivantes ci-dessous, seront ignorées--
+
+M    sequential/nbody_alloc.c
+M    sequential/nbody_alloc.h
+M    sequential/nbody_barnes_hut.c
