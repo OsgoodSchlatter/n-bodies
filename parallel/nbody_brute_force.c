@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <unistd.h>
 
+
 #ifdef DISPLAY
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -89,26 +90,34 @@ void move_particle(particle_t *p, double step)
 */
 void all_move_particles(double step)
 {
-  /* First calculate force for particles. */
-  int i;
-  for (i = 0; i < nparticles; i++)
-  {
-    int j;
-    particles[i].x_force = 0;
-    particles[i].y_force = 0;
-    for (j = 0; j < nparticles; j++)
+    int n_threads=8;
+#pragma omp parallel num_threads(n_threads)
     {
-      particle_t *p = &particles[j];
-      /* compute the force of particle j on particle i */
-      compute_force(&particles[i], p->x_pos, p->y_pos, p->mass);
-    }
-  }
+        /* First calculate force for particles. */
+        int i;
 
-  /* then move all particles and return statistics */
-  for (i = 0; i < nparticles; i++)
-  {
-    move_particle(&particles[i], step);
-  }
+#pragma omp for schedule(guided)
+        for (i = 0; i < nparticles; i++)
+        {
+            int j;
+            particles[i].x_force = 0;
+            particles[i].y_force = 0;
+            for (j = 0; j < nparticles; j++)
+            {
+                particle_t *p = &particles[j];
+                /* compute the force of particle j on particle i */
+                compute_force(&particles[i], p->x_pos, p->y_pos, p->mass);
+            }
+        }
+
+#pragma omp for
+        /* then move all particles and return statistics */
+        for (i = 0; i < nparticles; i++)
+        {
+            move_particle(&particles[i], step);
+        }
+
+    }
 }
 
 /* display all the particles */
@@ -200,6 +209,14 @@ int main(int argc, char **argv)
   print_all_particles(f_out);
   fclose(f_out);
 #endif
+
+/*  //TEST de OpenMP
+  omp_set_num_threads(4);
+#pragma omp parallel
+  {
+      int tid = omp_get_thread_num();
+      printf("OUI %d\n",tid);
+  }*/
 
   printf("-----------------------------\n");
   printf("nparticles: %d\n", nparticles);
