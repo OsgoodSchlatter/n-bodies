@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <assert.h>
 #include <unistd.h>
+#include <omp.h>
 
 #ifdef DISPLAY
 #include <X11/Xlib.h>
@@ -22,7 +23,7 @@
 
 FILE *f_out = NULL;
 
-int nparticles = 1000; /* number of particles */
+int nparticles =2000; /* number of particles */
 float T_FINAL = 1.0;   /* simulation end time */
 
 particle_t *particles;
@@ -56,7 +57,6 @@ void compute_force(particle_t *p, double x_pos, double y_pos, double mass)
   x_sep = x_pos - p->x_pos;
   y_sep = y_pos - p->y_pos;
   dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
-
   /* Use the 2-dimensional gravity rule: F = d * (GMm/d^2) */
   grav_base = GRAV_CONSTANT * (p->mass) * (mass) / dist_sq;
 
@@ -231,12 +231,15 @@ void all_move_particles(double step)
 
 void run_simulation()
 {
-  double t = 0.0, dt = 0.01;
 
-  while (t < T_FINAL && nparticles > 0)
+  double t = 0.0, dt = 0.01;
+  //
+  // while (t < T_FINAL && nparticles > 0)
+  #pragma omp parallel for private(t) schedule(dynamic)
+  for(t=0.;t<T_FINAL && nparticles > 0;  t += dt)
   {
     /* Update time. */
-    t += dt;
+    //t += dt;
     /* Move particles with the current and compute rms velocity. */
     all_move_particles(dt);
 
