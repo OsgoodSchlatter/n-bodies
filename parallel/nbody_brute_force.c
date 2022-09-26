@@ -88,15 +88,14 @@ void move_particle(particle_t *p, double step)
   Update positions, velocity, and acceleration.
   Return local computations.
 */
-void all_move_particles(double step)
+void all_move_particles(double step,int n_threads)
 {
-    int n_threads=8;
 #pragma omp parallel num_threads(n_threads)
     {
         /* First calculate force for particles. */
         int i;
 
-#pragma omp for schedule(guided)
+#pragma omp for schedule(dynamic)
         for (i = 0; i < nparticles; i++)
         {
             int j;
@@ -142,7 +141,7 @@ void print_all_particles(FILE *f)
   }
 }
 
-void run_simulation()
+void run_simulation(int n_threads)
 {
   double t = 0.0, dt = 0.01;
   while (t < T_FINAL && nparticles > 0)
@@ -150,7 +149,7 @@ void run_simulation()
     /* Update time. */
     t += dt;
     /* Move particles with the current and compute rms velocity. */
-    all_move_particles(dt);
+    all_move_particles(dt,n_threads);
 
     /* Adjust dt based on maximum speed and acceleration--this
        simple rule tries to insure that no velocity will change
@@ -172,13 +171,17 @@ void run_simulation()
 */
 int main(int argc, char **argv)
 {
+    int n_threads=8;
   if (argc >= 2)
   {
     nparticles = atoi(argv[1]);
   }
-  if (argc == 3)
+  if (argc >= 3)
   {
     T_FINAL = atof(argv[2]);
+  }
+  if (argc ==4 ){
+      n_threads = atof(argv[3]);
   }
 
   init();
@@ -197,7 +200,7 @@ int main(int argc, char **argv)
   gettimeofday(&t1, NULL);
 
   /* Main thread starts simulation ... */
-  run_simulation();
+  run_simulation(n_threads);
 
   gettimeofday(&t2, NULL);
 
