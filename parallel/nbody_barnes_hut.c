@@ -179,6 +179,7 @@ void move_particle(particle_t *p, double step, node_t *new_root)
       p->y_pos < new_root->y_min ||
       p->y_pos > new_root->y_max)
   {
+    //protéger cette variable
     nparticles--;
   }
   else
@@ -233,20 +234,33 @@ void run_simulation()
 {
 
   double t = 0.0, dt = 0.01;
-  //
-  // while (t < T_FINAL && nparticles > 0)
-  #pragma omp parallel for private(t) schedule(dynamic)
-  for(t=0.;t<T_FINAL && nparticles > 0;  t += dt)
+
+// protéger accès concurrent à t et print_particles
+// créer variable locales dans while
+// t < T_FINAL && nparticles > 0
+
+  #pragma omp parallel
+  while (1)
   {
+    int t_local;
+
     /* Update time. */
-    //t += dt;
+    #pragma omp atomic update
+    t += dt;
+
+    #pragma omp atomic read
+    t_local = t;
+
+    if(!(t_local < T_FINAL && nparticles > 0)){
+      break;
+    }
     /* Move particles with the current and compute rms velocity. */
+    #pragma omp critical
     all_move_particles(dt);
 
     /* Adjust dt based on maximum speed and acceleration--this
        simple rule tries to insure that no velocity will change
        by more than 10% */
-
     dt = 0.1 * max_speed / max_acc;
 
     /* Plot the movement of the particle */
