@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <assert.h>
 #include <unistd.h>
+#include <omp.h>
 
 #ifdef DISPLAY
 #include <X11/Xlib.h>
@@ -22,8 +23,9 @@
 
 FILE *f_out = NULL;
 
-int nparticles = 1000; /* number of particles */
+int nparticles = 2000; /* number of particles */
 float T_FINAL = 1.0;   /* simulation end time */
+int n_threads = 3;
 
 particle_t *particles;
 
@@ -260,9 +262,14 @@ void run_simulation()
 void insert_all_particles(int nparticles, particle_t *particles, node_t *root)
 {
   int i;
-  for (i = 0; i < nparticles; i++)
+  omp_set_num_threads(n_threads);
+#pragma omp parallel for schedule(dynamic)
   {
-    insert_particle(&particles[i], root);
+
+    for (i = 0; i < nparticles; i++)
+    {
+      insert_particle(&particles[i], root);
+    }
   }
 }
 
