@@ -25,7 +25,7 @@ FILE *f_out = NULL;
 
 int nparticles = 2000; /* number of particles */
 float T_FINAL = 1.0;   /* simulation end time */
-int n_threads = 3;
+int n_threads = 8;
 
 particle_t *particles;
 
@@ -262,15 +262,11 @@ void run_simulation()
 void insert_all_particles(int nparticles, particle_t *particles, node_t *root)
 {
   int i;
-  omp_set_num_threads(n_threads);
-#pragma omp parallel for schedule(dynamic)
-  {
 
     for (i = 0; i < nparticles; i++)
     {
       insert_particle(&particles[i], root);
     }
-  }
 }
 
 /*
@@ -292,7 +288,12 @@ int main(int argc, char **argv)
   /* Allocate global shared arrays for the particles data set. */
   particles = malloc(sizeof(particle_t) * nparticles);
   all_init_particles(nparticles, particles);
-  insert_all_particles(nparticles, particles, root);
+
+  omp_set_num_threads(n_threads);
+  #pragma omp parallel for schedule(dynamic)
+  {
+    insert_all_particles(nparticles, particles, root);
+  }
 
   /* Initialize thread data structures */
 #ifdef DISPLAY
