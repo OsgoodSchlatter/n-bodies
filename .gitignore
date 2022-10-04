@@ -1,0 +1,6 @@
+#ignore *.o
+*.o
+
+#ignore nbody_brute_force
+nbody_brute_force
+nbody_barnes_hut
