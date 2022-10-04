@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <assert.h>
 #include <unistd.h>
+#include <omp.h>
 
 
 #ifdef DISPLAY
@@ -22,7 +23,11 @@
 #include "nbody_tools.h"
 
 FILE *f_out = NULL;
+FILE *f_resultat= NULL;
 
+
+int RESULTAT_OPENMP=0;
+int n_threads=1;
 int nparticles = 1500; /* number of particles */
 float T_FINAL = 1.0;   /* simulation end time */
 particle_t *particles;
@@ -90,15 +95,15 @@ void move_particle(particle_t *p, double step)
 */
 void all_move_particles(double step,int n_threads)
 {
+
 #pragma omp parallel num_threads(n_threads)
     {
         /* First calculate force for particles. */
         int i;
-
-#pragma omp for schedule(dynamic)
+#pragma omp for schedule(static)
         for (i = 0; i < nparticles; i++)
         {
-            int j;
+            int j=0;
             particles[i].x_force = 0;
             particles[i].y_force = 0;
             for (j = 0; j < nparticles; j++)
@@ -109,7 +114,7 @@ void all_move_particles(double step,int n_threads)
             }
         }
 
-#pragma omp for
+#pragma omp for schedule(static)
         /* then move all particles and return statistics */
         for (i = 0; i < nparticles; i++)
         {
@@ -171,7 +176,6 @@ void run_simulation(int n_threads)
 */
 int main(int argc, char **argv)
 {
-    int n_threads=8;
   if (argc >= 2)
   {
     nparticles = atoi(argv[1]);
@@ -180,8 +184,11 @@ int main(int argc, char **argv)
   {
     T_FINAL = atof(argv[2]);
   }
-  if (argc ==4 ){
+  if (argc >=4 ){
       n_threads = atof(argv[3]);
+  }
+  if (argc ==5 ){
+      RESULTAT_OPENMP = atof(argv[4]);
   }
 
   init();
@@ -226,6 +233,13 @@ int main(int argc, char **argv)
   printf("T_FINAL: %f\n", T_FINAL);
   printf("-----------------------------\n");
   printf("Simulation took %lf s to complete\n", duration);
+
+if (RESULTAT_OPENMP==1){
+    FILE *f_resultat = fopen("../resultat/resultatBruteOpenMP.txt", "a");
+    assert(f_resultat);
+    fprintf(f_resultat, "%d %f %d %f \n", nparticles,T_FINAL, n_threads ,duration );
+    fclose(f_resultat);
+}
 
 #ifdef DISPLAY
   clear_display();
