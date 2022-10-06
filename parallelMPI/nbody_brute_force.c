@@ -102,9 +102,6 @@ void all_move_particles(double step)
   /* First calculate force for particles. */
   int i;
   /*  Séparer les nparticles entre les n_process
-      Chaque process a besoin de :
-       - particles
-       -
   */
   //printf("comm_rank %d : %d <i< %d\n",comm_rank,comm_rank*nparticles/comm_size, (comm_rank+1)*nparticles/comm_size);
   for (i = (int) (comm_rank*nparticles/comm_size) ; i < (int) ((comm_rank+1)*nparticles/comm_size) ; i++)
@@ -155,43 +152,22 @@ void run_simulation()
     double t = 0.0, dt = 0.01;
     int nParticulePerProcess = ((int) ((comm_rank+1)*nparticles/comm_size))-((int) ((comm_rank)*nparticles/comm_size));
     //printf("%d : %d",comm_rank,nParticulePerProcess);
-    //ALLTOALL particles
-    double* my_values = malloc(nParticulePerProcess*6*sizeof(double));
-    // Gestion des destinataires et de l'emplacement des valeurs envoyées
-    //int* counts_send = malloc(comm_size*sizeof(int));
-    //int* displacements_send = malloc(comm_size*sizeof(int));
-/*    for(int i = 0; i < comm_size; i++)
-    {
-        if (comm_rank==comm_size-1){
-            counts_send[i]=(nparticles-((int) ((comm_size-1)*nparticles/comm_size))) *6;
-        }
-        else {
-            counts_send[i] = ((int) (nparticles/comm_size))*6;
-        }
-
-        displacements_send[i] = (comm_rank*((int) (nparticles/comm_size))) *6;
-    }*/
+    //ALLGATHERV particles
+    int n_caracteristic_shared=6;
+    double* my_values = malloc(nParticulePerProcess*n_caracteristic_shared*sizeof(double));
     // Gestion des sources et de la destination des valeurs reçus
-    double* buffer_recv= malloc(nparticles*6*sizeof(double));
+    double* buffer_recv= malloc(nparticles*n_caracteristic_shared*sizeof(double));
     int* counts_recv= malloc(comm_size*sizeof(int));
     int* displacements_recv = malloc(comm_size*sizeof(int));
     for(int i = 0; i < comm_size; i++)
     {
-        counts_recv[i] = ((int) (nparticles/comm_size)) *6;
-        displacements_recv[i] = (i*((int) (nparticles/comm_size))) *6;
+        counts_recv[i] = ((int) (nparticles/comm_size)) * n_caracteristic_shared;
+        displacements_recv[i] = (i*((int) (nparticles/comm_size))) * n_caracteristic_shared;
     }
-    counts_recv[comm_size-1]=(nparticles-((int) ((comm_size-1)*nparticles/comm_size))) *6;
-        // AFFICHAGE DES TABLEAU DE GESTION D'ENVOI/RECEPTION
+    counts_recv[comm_size-1]=(nparticles-((int) ((comm_size-1)*nparticles/comm_size))) * n_caracteristic_shared;
+        // AFFICHAGE DES TABLEAU DE GESTION DE LA RECEPTION
 //        MPI_Barrier(MPI_COMM_WORLD);
 //        printf("\nComm_rank %d\n",comm_rank);
-////        printf("    counts_send \n");
-////        for (int i = 0 ;i<comm_size ;i++){
-////            printf("%d ",counts_send[i]);
-////        }
-////        printf("\n    displacements_send \n");
-////        for (int i = 0 ;i<comm_size ;i++){
-////            printf("%d ",displacements_send[i]);
-////        }
 //        printf("\n    counts_recv \n");
 //        for (int i = 0 ;i<comm_size ;i++){
 //            printf("%d ",counts_recv[i]);
@@ -205,7 +181,7 @@ void run_simulation()
 
     while (t < T_FINAL && nparticles > 0)
     {
-        //printf("comm_rank %d : t = %f / dt = %f / max_acc = %f / max_speed = %f\n",comm_rank,t,dt,max_acc_global,max_speed_global);
+//        printf("comm_rank %d : t = %f / dt = %f / max_acc = %f / max_speed = %f\n",comm_rank,t,dt,max_acc_global,max_speed_global);
 //        MPI_Barrier(MPI_COMM_WORLD);
 //        for(int i = 0; i < nparticles; i++)
 //        {
@@ -227,28 +203,26 @@ void run_simulation()
         for(int i = 0; i < nParticulePerProcess; i++)
         {
             //printf("comm_rank %d : t = %f / i = %d / j = %d\n",comm_rank,t,i,j);
-            my_values[i*6] = particles[j].x_pos;
-            my_values[i*6+1] = particles[j].y_pos;
-            my_values[i*6+2] = particles[j].x_vel;
-            my_values[i*6+3] = particles[j].y_vel;
-            my_values[i*6+4] = particles[j].x_force;
-            my_values[i*6+5] = particles[j].y_force;
-            //printf("t %f j %d SEND %f\n",t,j,my_values[6*i+5]);
+            my_values[i*n_caracteristic_shared] = particles[j].x_pos;
+            my_values[i*n_caracteristic_shared+1] = particles[j].y_pos;
+            my_values[i*n_caracteristic_shared+2] = particles[j].x_vel;
+            my_values[i*n_caracteristic_shared+3] = particles[j].y_vel;
+            my_values[i*n_caracteristic_shared+4] = particles[j].x_force;
+            my_values[i*n_caracteristic_shared+5] = particles[j].y_force;
             j+=1;
         }
-        MPI_Allgatherv(my_values,nParticulePerProcess*6, MPI_DOUBLE, buffer_recv, counts_recv, displacements_recv, MPI_DOUBLE, MPI_COMM_WORLD);
+        MPI_Allgatherv(my_values,nParticulePerProcess*n_caracteristic_shared, MPI_DOUBLE, buffer_recv, counts_recv, displacements_recv, MPI_DOUBLE, MPI_COMM_WORLD);
         //Mise à jour de particles
         for(int i = 0; i < nparticles; i++)
         {
-            particles[i].x_pos =buffer_recv[6*i];
-            particles[i].y_pos =buffer_recv[6*i+1];
-            particles[i].x_vel =buffer_recv[6*i+2];
-            particles[i].y_vel =buffer_recv[6*i+3];
-            particles[i].x_force =buffer_recv[6*i+4];
-            particles[i].y_force =buffer_recv[6*i+5];
-            //printf("t %f i %d RECV %f\n",t,i,buffer_recv[6*i+5]);
+            particles[i].x_pos =buffer_recv[n_caracteristic_shared*i];
+            particles[i].y_pos =buffer_recv[n_caracteristic_shared*i+1];
+            particles[i].x_vel =buffer_recv[n_caracteristic_shared*i+2];
+            particles[i].y_vel =buffer_recv[n_caracteristic_shared*i+3];
+            particles[i].x_force =buffer_recv[n_caracteristic_shared*i+4];
+            particles[i].y_force =buffer_recv[n_caracteristic_shared*i+5];
         }
-        // FIN ALLTOALL particles
+        // FIN Allgatherv particles
 
         //ALLREDUCTION max_speed / max_acc
         MPI_Allreduce(&max_acc_local,&max_acc_global,1,MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
