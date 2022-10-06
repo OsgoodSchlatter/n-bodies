@@ -71,6 +71,7 @@ void compute_force(particle_t *p, double x_pos, double y_pos, double mass)
 /* compute the new position/velocity Appel => move_particle(&particles[i], step); */
 void move_particle(particle_t *p, double step)
 {
+    //cuda : particle_t* p, step, speed_sq_out, max_acc_local, max_speed_local
   p->x_pos += (p->x_vel) * step;
   p->y_pos += (p->y_vel) * step;
   double x_acc = p->x_force / p->mass;
@@ -198,6 +199,7 @@ void run_simulation()
 
         all_move_particles(dt);
 
+        MPI_Request requests[4];
         //init_my_value avec particles x_pos y_pos x_vel y_vel x_force y_force //INIT QUE LA OU IL Y A BESOIN
         int j=(int) ((comm_rank)*nparticles/comm_size);
         for(int i = 0; i < nParticulePerProcess; i++)
@@ -211,7 +213,31 @@ void run_simulation()
             my_values[i*n_caracteristic_shared+5] = particles[j].y_force;
             j+=1;
         }
-        MPI_Allgatherv(my_values,nParticulePerProcess*n_caracteristic_shared, MPI_DOUBLE, buffer_recv, counts_recv, displacements_recv, MPI_DOUBLE, MPI_COMM_WORLD);
+
+        MPI_Iallgatherv(my_values,
+                        nParticulePerProcess*n_caracteristic_shared,
+                        MPI_DOUBLE,
+                        buffer_recv,
+                        counts_recv,
+                        displacements_recv,
+                        MPI_DOUBLE,
+                        MPI_COMM_WORLD,
+                        &requests[0]);
+
+
+        //ALLREDUCTION max_speed / max_acc
+        MPI_Iallreduce(&max_acc_local,&max_acc_global,1,MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD,&requests[1]);
+
+        MPI_Iallreduce(&max_speed_local,&max_speed_global,1,MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD,&requests[2]);
+
+
+        //REDUCTION sum_speed_sq
+        MPI_Ireduce(&sum_speed_sq_local,&sum_speed_sq_global,1,MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD,&requests[3]);
+
+
+        MPI_Waitall(4,requests,MPI_STATUSES_IGNORE);
+        //MPI_BARRIER
+
         //Mise à jour de particles
         for(int i = 0; i < nparticles; i++)
         {
@@ -224,16 +250,8 @@ void run_simulation()
         }
         // FIN Allgatherv particles
 
-        //ALLREDUCTION max_speed / max_acc
-        MPI_Allreduce(&max_acc_local,&max_acc_global,1,MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-        MPI_Allreduce(&max_speed_local,&max_speed_global,1,MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
-        //REDUCTION sum_speed_sq
-        MPI_Reduce(&sum_speed_sq_local,&sum_speed_sq_global,1,MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-
-//        MPI_Barrier(MPI_COMM_WORLD);
         if (comm_rank==0){
-            dt = 0.1 * max_speed_global / max_acc_global;
             /* Plot the movement of the particle */
 #if DISPLAY
             clear_display();
@@ -242,9 +260,7 @@ void run_simulation()
 
 #endif
         }
-//        MPI_Barrier(MPI_COMM_WORLD);
-
-        MPI_Bcast(&dt,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+        dt = 0.1 * max_speed_global / max_acc_global;
     }
 }
 
@@ -360,7 +376,7 @@ int main(int argc, char **argv)
     draw_all_particles();
     flush_display();
 
-    printf("Hit return to close the window.");
+    printf("Hit return to close the window.\n");
 
     getchar();
     /* Close the X window used to display the particles */

@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <mpi.h>
+#include <omp.h>
 
 #ifdef DISPLAY
 #include <X11/Xlib.h>
@@ -104,25 +105,28 @@ void all_move_particles(double step)
   /*  Séparer les nparticles entre les n_process
   */
   //printf("comm_rank %d : %d <i< %d\n",comm_rank,comm_rank*nparticles/comm_size, (comm_rank+1)*nparticles/comm_size);
-  for (i = (int) (comm_rank*nparticles/comm_size) ; i < (int) ((comm_rank+1)*nparticles/comm_size) ; i++)
-  {
-    //printf("nparticule %d par %d / %d\n",i,comm_rank,comm_size);
-    int j;
-    particles[i].x_force = 0;
-    particles[i].y_force = 0;
-    for (j = 0; j < nparticles; j++)
+#pragma omp parallel num_threads(4)
     {
-      particle_t *p = &particles[j];
-      /* compute the force of particle j on particle i // Ne modifie que particles[i]*/
-      compute_force(&particles[i], p->x_pos, p->y_pos, p->mass);
-    }
-  }
 
-  /* then move all particles and return statistics */
-  for (i = (int) (comm_rank*nparticles/comm_size) ; i < (int) ((comm_rank+1)*nparticles/comm_size) ; i++)
-  {
-    move_particle(&particles[i], step);
-  }
+    #pragma omp for schedule(static)
+        for (i = (int) (comm_rank * nparticles / comm_size); i < (int) ((comm_rank + 1) * nparticles / comm_size); i++) {
+            //printf("nparticule %d par %d / %d\n",i,comm_rank,comm_size);
+            int j;
+            particles[i].x_force = 0;
+            particles[i].y_force = 0;
+            for (j = 0; j < nparticles; j++) {
+                particle_t *p = &particles[j];
+                /* compute the force of particle j on particle i // Ne modifie que particles[i]*/
+                compute_force(&particles[i], p->x_pos, p->y_pos, p->mass);
+            }
+        }
+
+        /* then move all particles and return statistics */
+    #pragma omp for schedule(static)
+        for (i = (int) (comm_rank * nparticles / comm_size); i < (int) ((comm_rank + 1) * nparticles / comm_size); i++) {
+            move_particle(&particles[i], step);
+        }
+    }
 }
 
 /* display all the particles */

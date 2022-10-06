@@ -6,9 +6,9 @@ TARGET	= nbody_brute_force nbody_barnes_hut
 OBJS	= ui.o xstuff.o nbody_tools.o nbody_alloc.o
 
 DISPLAY = -DDISPLAY
-DISPLAY =
+#DISPLAY =
 
-DUMP = -DDUMP_RESULT
+#DUMP = -DDUMP_RESULT
 DUMP =
 
 all: $(TARGET)

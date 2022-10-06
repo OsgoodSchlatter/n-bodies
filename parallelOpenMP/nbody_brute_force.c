@@ -38,14 +38,14 @@ double max_speed = 0;
 
 void init()
 {
-  /* Nothing to do */
+#ifdef DISPLAY
+    Display *theDisplay; /* These three variables are required to open the */
+    GC theGC;            /* particle plotting window.  They are externally */
+    Window theMain;      /* declared in ui.h but are also required here.   */
+#endif
 }
 
-#ifdef DISPLAY
-Display *theDisplay; /* These three variables are required to open the */
-GC theGC;            /* particle plotting window.  They are externally */
-Window theMain;      /* declared in ui.h but are also required here.   */
-#endif
+
 
 /* compute the force that a particle with position (x_pos, y_pos) and mass 'mass'
  * applies to particle p

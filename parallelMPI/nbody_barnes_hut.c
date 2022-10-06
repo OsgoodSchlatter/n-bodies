@@ -10,6 +10,8 @@
 #include <sys/time.h>
 #include <assert.h>
 #include <unistd.h>
+#include <mpi.h>
+
 
 #ifdef DISPLAY
 #include <X11/Xlib.h>
