@@ -121,13 +121,13 @@ void all_move_particles(double step)
             }
         }
 
-        /* then move all particles and return statistics */
+        /* then move all particles and return statistics  */
     #pragma omp for schedule(static) reduction(max:max_acc_local) reduction(max : max_speed_local) reduction(+ : sum_speed_sq_local)
         for (i = (int) (comm_rank * nparticles / comm_size); i < (int) ((comm_rank + 1) * nparticles / comm_size); i++) {
             move_particle(&particles[i], step);
         }
-        
-        printf("[%d/%d] thread %d / %d : %f\n",comm_rank,comm_size,omp_get_thread_num(),omp_get_num_threads(),max_speed_local);
+
+        //printf("[%d/%d] thread %d / %d : %f\n",comm_rank,comm_size,omp_get_thread_num(),omp_get_num_threads(),max_speed_local);
     }
 
 }
