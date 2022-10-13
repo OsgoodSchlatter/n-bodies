@@ -30,6 +30,9 @@ nbody_barnes_hut: nbody_barnes_hut.o $(OBJS)
 %.o: %.cu
 	$(NVCC) $(CFLAGS) -c $< $(VERBOSE) $(DISPLAY) $(DUMP)
 
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< $(VERBOSE) $(DISPLAY) $(DUMP)
+
 
 clean:
 	rm -f *.o $(TARGET)
