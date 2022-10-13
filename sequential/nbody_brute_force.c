@@ -104,6 +104,8 @@ void all_move_particles(double step)
     }
   }
 
+    printf("pos_x = %f\n",particles[0].x_pos);
+
   /* then move all particles and return statistics */
   for (i = 0; i < nparticles; i++)
   {
@@ -138,6 +140,7 @@ void run_simulation()
   double t = 0.0, dt = 0.01;
   while (t < T_FINAL && nparticles > 0)
   {
+      printf("t = %f\n",t);
     /* Update time. */
     t += dt;
     /* Move particles with the current and compute rms velocity. */
