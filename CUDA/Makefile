@@ -21,14 +21,11 @@ DUMP =
 
 all: $(TARGET)
 
-nbody_brute_force: nbody_brute_force.o $(OBJS)
+nbody_brute_force: nbody_brute_force.cu $(OBJS)
 	$(NVCC) $(VERBOSE) -o $@ $< $(OBJS) $(LDFLAGS)
 
-nbody_barnes_hut: nbody_barnes_hut.o $(OBJS)
+nbody_barnes_hut: nbody_barnes_hut.cu $(OBJS)
 	$(NVCC) $(VERBOSE) -o $@ $< $(OBJS)  $(LDFLAGS)
-
-%.o: %.cu
-	$(NVCC) $(CFLAGS) -c $< $(VERBOSE) $(DISPLAY) $(DUMP)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< $(VERBOSE) $(DISPLAY) $(DUMP)
