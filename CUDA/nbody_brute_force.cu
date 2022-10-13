@@ -13,7 +13,7 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <helper_cuda.h>
+//#include <helper_cuda.h>
 
 #ifdef DISPLAY
 #include <X11/Xlib.h>
@@ -45,119 +45,137 @@ void init()
 
 
 /********************** kernel **************************/
-__global__ void kernel_compute_force(particle_t *p, double x_pos, double y_pos, double mass)
+__global__ void kernel_compute_force(particle_t *particles, int nparticles)
 {
     /* Calcul de l'indice i*/
     int i = blockIdx.x*blockDim.x + threadIdx.x;
     int j = blockIdx.y*blockDim.y + threadIdx.y;
 
-    if (i<nparticles) {
+    if (i<nparticles && j<nparticles) {
         //LECTURE GPU GLOBAL
-        particle_t *pi = &particles[i];
-        int j;
-        pi.x_force = 0;
-        pi.y_force = 0;
 
-        //LECTURE GPU GLOBAL
-        particle_t *pj = &particles[j];
+        //particle_t* pi = &particles[i];
+        // pi.x_force = 0;
+        // pi.y_force = 0;
+        //
+        // //LECTURE GPU GLOBAL
+        // particle_t* pj = &particles[j];
+        // double x_sep, y_sep, dist_sq, grav_base;
+        //
+        // x_sep = pj->x_pos - pi->x_pos;
+        // y_sep = pj->y_pos - pi->y_pos;
+        // dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
+        //
+        // /* Use the 2-dimensional gravity rule: F = d * (GMm/d^2) */
+        // grav_base = GRAV_CONSTANT * (pi->mass) * (pj->mass) / dist_sq;
+        //
+        // //ECRITURE LOCAL -> REGISTRE
+        // pi->x_force += grav_base * x_sep;
+        // pi->y_force += grav_base * y_sep;
+        //
+        // //ecriture Global i
+        // particles[i] = pi;
+
+        particles[i].x_force = 0;
+        particles[i].y_force = 0;
+
         double x_sep, y_sep, dist_sq, grav_base;
 
-        x_sep = pj->x_pos - pi->x_pos;
-        y_sep = pj->y_pos - pi->y_pos;
+        x_sep = particles[j].x_pos - particles[i].x_pos;
+        y_sep = particles[j].y_pos - particles[i].y_pos;
         dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
 
         /* Use the 2-dimensional gravity rule: F = d * (GMm/d^2) */
-        grav_base = GRAV_CONSTANT * (pi->mass) * (pj->mass) / dist_sq;
+        grav_base = GRAV_CONSTANT * (particles[i].mass) * (particles[j].mass) / dist_sq;
 
-        //ECRITURE LOCAL -> REGISTRE
-        pi->x_force += grav_base * x_sep;
-        pi->y_force += grav_base * y_sep;
-
-        //ecriture Global i
-        particles[i] = pi;
-    }
-}
-
-__global__ void kernel_move_particle(particle_t *pTab, int nparticles, double step)
-{
-    //HostToDevice => pTab, speed_sq, cur_acc, cur_speed
-
-    /* Calcul de l'indice i*/
-    int i = blockIdx.x*blockDim.x + threadIdx.x;
-    if (i<nparticles){
-        particle_t* p = &pTab[i];
-
-        p->x_pos += (p->x_vel) * step;
-        p->y_pos += (p->y_vel) * step;
-        double x_acc = p->x_force / p->mass;
-        double y_acc = p->y_force / p->mass;
-        p->x_vel += x_acc * step;
-        p->y_vel += y_acc * step;
-
-        /* compute statistics */
-        double cur_acc = (x_acc * x_acc + y_acc * y_acc);
-        cur_acc = sqrt(cur_acc);
-        double speed_sq = (p->x_vel) * (p->x_vel) + (p->y_vel) * (p->y_vel);
-        double cur_speed = sqrt(speed_sq);
-
-        //BARRIER
-        //sum_speed_sq += speed_sq;
-        //max_acc = MAX(max_acc, cur_acc);
-        //max_speed = MAX(max_speed, cur_speed);
-        //BARRIER
-
-        //DeviceToHost => pTab, speed_sq, cur_acc, cur_speed
-        pTab[i]=p;
-    }
-}
-__global__ void kernel_all_move_particles(particle_t *particles, double step,int nparticles)
-{
-    /* Calcul de l'indice i*/
-    int i = blockIdx.x*blockDim.x + threadIdx.x;
-    if (i<nparticles){
-        //LECTURE GPU GLOBAL
-        particle_t* pi = &particles[i];
-        int j;
-        pi.x_force = 0;
-        pi.y_force = 0;
-        for (j = 0; j < nparticles; j++)
-        {
-            //LECTURE GPU GLOBAL
-            particle_t *pj = &particles[j];
-            double x_sep, y_sep, dist_sq, grav_base;
-
-            x_sep = pj->x_pos - pi->x_pos;
-            y_sep = pj->y_pos - pi->y_pos;
-            dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
-
-            /* Use the 2-dimensional gravity rule: F = d * (GMm/d^2) */
-            grav_base = GRAV_CONSTANT * (pi->mass) * (pj->mass) / dist_sq;
-
-            //ECRITURE LOCAL -> REGISTRE
-            pi->x_force += grav_base * x_sep;
-            pi->y_force += grav_base * y_sep;
-        }
-
-        pi>x_pos += (pi->x_vel) * step;
-        pi->y_pos += (pi->y_vel) * step;
-        double x_acc = pi->x_force / p->mass;
-        double y_acc = pi->y_force / p->mass;
-        p->x_vel += x_acc * step;
-        p->y_vel += y_acc * step;
-
-        /* compute statistics */
-        cur_acc = (x_acc * x_acc + y_acc * y_acc);
-        cur_acc = sqrt(cur_acc);
-        speed_sq = (p->x_vel) * (p->x_vel) + (p->y_vel) * (p->y_vel);
-        cur_speed = sqrt(speed_sq);
-
-        //Barriere
-        //ECRITURE GPU GLOBALE mais chacun son slot
-        particles[i]=pi;
-
+        //RENDRE ATOMIC
+        particles[i].x_force += grav_base * x_sep;
+        particles[i].y_force += grav_base * y_sep;
 
     }
 }
+
+// __global__ void kernel_move_particle(particle_t *pTab, int nparticles, double step)
+// {
+//     //HostToDevice => pTab, speed_sq, cur_acc, cur_speed
+//
+//     /* Calcul de l'indice i*/
+//     int i = blockIdx.x*blockDim.x + threadIdx.x;
+//     if (i<nparticles){
+//         particle_t* p = &pTab[i];
+//
+//         p->x_pos += (p->x_vel) * step;
+//         p->y_pos += (p->y_vel) * step;
+//         double x_acc = p->x_force / p->mass;
+//         double y_acc = p->y_force / p->mass;
+//         p->x_vel += x_acc * step;
+//         p->y_vel += y_acc * step;
+//
+//         /* compute statistics */
+//         double cur_acc = (x_acc * x_acc + y_acc * y_acc);
+//         cur_acc = sqrt(cur_acc);
+//         double speed_sq = (p->x_vel) * (p->x_vel) + (p->y_vel) * (p->y_vel);
+//         double cur_speed = sqrt(speed_sq);
+//
+//         //BARRIER
+//         //sum_speed_sq += speed_sq;
+//         //max_acc = MAX(max_acc, cur_acc);
+//         //max_speed = MAX(max_speed, cur_speed);
+//         //BARRIER
+//
+//         //DeviceToHost => pTab, speed_sq, cur_acc, cur_speed
+//         pTab[i]=p;
+//     }
+// }
+// __global__ void kernel_all_move_particles(particle_t *particles, double step,int nparticles)
+// {
+//     /* Calcul de l'indice i*/
+//     int i = blockIdx.x*blockDim.x + threadIdx.x;
+//     if (i<nparticles){
+//         //LECTURE GPU GLOBAL
+//         particle_t* pi = &particles[i];
+//         int j;
+//         pi.x_force = 0;
+//         pi.y_force = 0;
+//         for (j = 0; j < nparticles; j++)
+//         {
+//             //LECTURE GPU GLOBAL
+//             particle_t *pj = &particles[j];
+//             double x_sep, y_sep, dist_sq, grav_base;
+//
+//             x_sep = pj->x_pos - pi->x_pos;
+//             y_sep = pj->y_pos - pi->y_pos;
+//             dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
+//
+//             /* Use the 2-dimensional gravity rule: F = d * (GMm/d^2) */
+//             grav_base = GRAV_CONSTANT * (pi->mass) * (pj->mass) / dist_sq;
+//
+//             //ECRITURE LOCAL -> REGISTRE
+//             pi->x_force += grav_base * x_sep;
+//             pi->y_force += grav_base * y_sep;
+//         }
+//
+//         pi>x_pos += (pi->x_vel) * step;
+//         pi->y_pos += (pi->y_vel) * step;
+//         double x_acc = pi->x_force / p->mass;
+//         double y_acc = pi->y_force / p->mass;
+//         p->x_vel += x_acc * step;
+//         p->y_vel += y_acc * step;
+//
+//         /* compute statistics */
+//         cur_acc = (x_acc * x_acc + y_acc * y_acc);
+//         cur_acc = sqrt(cur_acc);
+//         speed_sq = (p->x_vel) * (p->x_vel) + (p->y_vel) * (p->y_vel);
+//         cur_speed = sqrt(speed_sq);
+//
+//         //Barriere
+//         //ECRITURE GPU GLOBALE mais chacun son slot
+//         particles[i]=pi;
+//
+//
+//     }
+// }
+
 
 
 /* compute the force that a particle with position (x_pos, y_pos) and mass 'mass'
@@ -211,18 +229,25 @@ void all_move_particles(double step)
   /* First calculate force for particles. */
   //nparticles*nparticles*1 calculs
   int i;
-  for (i = 0; i < nparticles; i++)
-  {
-    int j;
-    particles[i].x_force = 0;
-    particles[i].y_force = 0;
-    for (j = 0; j < nparticles; j++)
-    {
-      particle_t *p = &particles[j];
-      /* compute the force of particle j on particle i */
-      compute_force(&particles[i], p->x_pos, p->y_pos, p->mass);
-    }
-  }
+  // for (i = 0; i < nparticles; i++)
+  // {
+  //   int j;
+  //   particles[i].x_force = 0;
+  //   particles[i].y_force = 0;
+  //   for (j = 0; j < nparticles; j++)
+  //   {
+  //     particle_t *p = &particles[j];
+  //     /* compute the force of particle j on particle i */
+  //     compute_force(&particles[i], p->x_pos, p->y_pos, p->mass);
+  //   }
+  //run_simulation
+  //
+  // }
+  int blockSize = 32;
+  dim3 dimBlock (blockSize,blockSize,1);
+  dim3 dimGrid (ceil(nparticles/blockSize),ceil(nparticles/blockSize),1);
+  kernel_compute_force<<<dimGrid, dimBlock>>>(particles,nparticles);
+  cudaDeviceSynchronize();
   //Barrier
 
   //nparticules*1*1 calculs
@@ -234,17 +259,17 @@ void all_move_particles(double step)
   //Calcul du max et sum
 }
 
-/* display all the particles */
-void draw_all_particles()
-{
-  int i;
-  for (i = 0; i < nparticles; i++)
-  {
-    int x = POS_TO_SCREEN(particles[i].x_pos);
-    int y = POS_TO_SCREEN(particles[i].y_pos);
-    draw_point(x, y);
-  }
-}
+// /* display all the particles */
+// void draw_all_particles()
+// {
+//   int i;
+//   for (i = 0; i < nparticles; i++)
+//   {
+//     int x = POS_TO_SCREEN(particles[i].x_pos);
+//     int y = POS_TO_SCREEN(particles[i].y_pos);
+//     draw_point(x, y);
+//   }
+// }
 
 void print_all_particles(FILE *f)
 {
@@ -259,6 +284,7 @@ void print_all_particles(FILE *f)
 void run_simulation()
 {
   double t = 0.0, dt = 0.01;
+
   while (t < T_FINAL && nparticles > 0)
   {
     /* Update time. */
@@ -302,8 +328,10 @@ int main(int argc, char **argv)
 
   init();
 
+  //Allocate managed memory
+  cudaMallocManaged(&particles,sizeof(particle_t) * nparticles);
   /* Allocate global shared arrays for the particles data set. */
-  particles = malloc(sizeof(particle_t) * nparticles);
+  //particles = malloc(sizeof(particle_t) * nparticles);
   all_init_particles(nparticles, particles);
 
   /* Initialize thread data structures */
@@ -315,8 +343,11 @@ int main(int argc, char **argv)
   struct timeval t1, t2;
   gettimeofday(&t1, NULL);
 
+
   /* Main thread starts simulation ... */
   run_simulation();
+
+
 
   gettimeofday(&t2, NULL);
 
@@ -346,5 +377,7 @@ int main(int argc, char **argv)
   /* Close the X window used to display the particles */
   XCloseDisplay(theDisplay);
 #endif
+  //FREE
+  cudaFree(particles);
   return 0;
 }
