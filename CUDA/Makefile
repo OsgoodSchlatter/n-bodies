@@ -21,8 +21,8 @@ DUMP =
 
 all: $(TARGET)
 
-nbody_brute_force: nbody_brute_force.cu $(OBJS)
-	$(NVCC) $(VERBOSE) -o $@ $< $(OBJS) $(LDFLAGS)
+nbody_brute_force: nbody_brute_force.o
+	$(NVCC) -arch=sm_35 $(CFLAGS)  -o $@ $^
 
 nbody_barnes_hut: nbody_barnes_hut.cu $(OBJS)
 	$(NVCC) $(VERBOSE) -o $@ $< $(OBJS)  $(LDFLAGS)
@@ -30,6 +30,8 @@ nbody_barnes_hut: nbody_barnes_hut.cu $(OBJS)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< $(VERBOSE) $(DISPLAY) $(DUMP)
 
+%.o: %.cu
+	$(NVCC) -arch=sm_35 $(NVCFLAGS) -c -o $@ $<
 
 clean:
 	rm -f *.o $(TARGET)
