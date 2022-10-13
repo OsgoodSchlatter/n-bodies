@@ -249,6 +249,7 @@ void all_move_particles(double step)
   kernel_compute_force<<<dimGrid, dimBlock>>>(particles,nparticles);
   cudaDeviceSynchronize();
   //Barrier
+    printf("%f \n",particles[0].x_pos);
 
   //nparticules*1*1 calculs
   /* then move all particles and return statistics */
@@ -287,6 +288,7 @@ void run_simulation()
 
   while (t < T_FINAL && nparticles > 0)
   {
+      printf("%f\n",t);
     /* Update time. */
     t += dt;
     /* Move particles with the current and compute rms velocity. */
