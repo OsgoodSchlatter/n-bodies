@@ -21,8 +21,11 @@ DUMP =
 
 all: $(TARGET)
 
-nbody_brute_force: nbody_brute_force.o
+cuda_recurence: test_recurence.o
 	$(NVCC) -arch=sm_35 $(CFLAGS)  -o $@ $^
+
+#nbody_brute_force: nbody_brute_force.o
+#	$(NVCC) -arch=sm_35 $(CFLAGS)  -o $@ $^
 
 #nbody_barnes_hut: nbody_barnes_hut.cu $(OBJS)
 #	$(NVCC) $(VERBOSE) -o $@ $< $(OBJS)  $(LDFLAGS)
