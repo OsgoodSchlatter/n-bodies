@@ -8,15 +8,13 @@
 #include "nbody.h"
 
 
-int *graphEtage;
-int *n;
+int const graphEtage=2;
+int const n = 4**(graphEtage);
 
 node_t *root;
 
 
 void init(){
-    graphEtage=2;
-    n = 4**(graphEtage)
     printf("%d\n",n);
 }
 
