@@ -48,12 +48,12 @@ int main(int argc, char **argv){
     cudaGraph_t graph;
     cudaGraphExec_t instance;
     cudaStream_t stream;
-    
+
     for(int istep=0; istep<NSTEP; istep++){
         if(!graphCreated){
             cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
 
-            recursiveLaunch(valeur,istep);
+            recursiveLaunch(*valeur,istep);
 
             cudaStreamEndCapture(stream, &graph);
             cudaGraphInstantiate(&instance, graph, NULL, NULL, 0);
