@@ -41,17 +41,19 @@ int main(int argc, char **argv){
     init();
     cudaMallocManaged(&valeur,n_node*sizeof(int));
     for (int i =0;i<n_node;i++){
-        valuer[i]=-1;
+        valeur[i]=-1;
     }
 
     bool graphCreated=false;
     cudaGraph_t graph;
     cudaGraphExec_t instance;
+    cudaStream_t stream;
+    
     for(int istep=0; istep<NSTEP; istep++){
         if(!graphCreated){
             cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
 
-            recusiveLaunch(valeur,istep);
+            recursiveLaunch(valeur,istep);
 
             cudaStreamEndCapture(stream, &graph);
             cudaGraphInstantiate(&instance, graph, NULL, NULL, 0);
