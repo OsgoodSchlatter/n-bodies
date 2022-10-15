@@ -233,6 +233,53 @@ void move_particles_in_node(node_t *n, double step, node_t *new_root)
   }
 }
 
+/* compute the new position of the particles in a node */
+void remplirMyValues(node_t *n)
+{
+    if (!n)
+        return;
+
+    if (n->particle)
+    {
+        //rempli myValue
+    }
+    if (n->children)
+    {
+        int i;
+        for (i = 0; i < 4; i++)
+        {
+
+            remplirMyValues();
+
+        }
+    }
+}
+
+void recvSendBuffer(node_t *n,int actual_n_particule)
+{
+    if (!n)
+        return;
+
+    if (n->particle)
+    {
+        n->particle.x_pos =buffer_recv[n_caracteristic_shared*actual_n_particule];
+        n->particle.y_pos =buffer_recv[n_caracteristic_shared*actual_n_particule+1];
+        n->particle.x_vel =buffer_recv[n_caracteristic_shared*actual_n_particule+2];
+        n->particle.y_vel =buffer_recv[n_caracteristic_shared*actual_n_particule+3];
+        n->particle.x_force =buffer_recv[n_caracteristic_shared*actual_n_particule+4];
+        n->particle.y_force =buffer_recv[n_caracteristic_shared*actual_n_particule+5];
+    }
+    if (n->children)
+    {
+        int i;
+        for (i = 0; i < 4; i++)
+        {
+            recvSendBuffer(&n->children[i],actual_n_particule+i+1);
+
+        }
+    }
+}
+
 /*
   Move particles one time step.
 
@@ -250,35 +297,26 @@ void all_move_particles(double step) {
 
     //compute_force_in_node(root);
 
-    int j=(int) ((comm_rank)*nparticles/comm_size);
-    for(int i = 0; i < nParticulePerProcess; i++)
-    {
-        //printf("comm_rank %d : t = %f / i = %d / j = %d\n",comm_rank,t,i,j);
-        my_values[i*n_caracteristic_shared] = particles[j].x_pos;
-        my_values[i*n_caracteristic_shared+1] = particles[j].y_pos;
-        my_values[i*n_caracteristic_shared+2] = particles[j].x_vel;
-        my_values[i*n_caracteristic_shared+3] = particles[j].y_vel;
-        my_values[i*n_caracteristic_shared+4] = particles[j].x_force;
-        my_values[i*n_caracteristic_shared+5] = particles[j].y_force;
-        j+=1;
-    }
+    //changer les tableaux counts_recv  displacements_recv
+    //&root->children[i].npaticles
+    //counts_recv={&root->children[i].npaticles,&root->children[i].npaticles,&root->children[i].npaticles,&root->children[i].npaticles};
+    //displacements_recv={0,&root->children[0].npaticles,&root->children[0].npaticles+&root->children[1].npaticles,nparticle-&root->children[3].npaticles};
+    free(my_values);
+    remplirValues(root->children[comm_rank]);
+
     MPI_Allgatherv(my_values,
-                    nParticulePerProcess*n_caracteristic_shared,
+                   &root->children[comm_size].npaticles*n_caracteristic_shared,
                     MPI_DOUBLE,
                     buffer_recv,
                     counts_recv,
                     displacements_recv,
                     MPI_DOUBLE,
                     MPI_COMM_WORLD);
-    for(int i = 0; i < nparticles; i++)
-    {
-        particles[i].x_pos =buffer_recv[n_caracteristic_shared*i];
-        particles[i].y_pos =buffer_recv[n_caracteristic_shared*i+1];
-        particles[i].x_vel =buffer_recv[n_caracteristic_shared*i+2];
-        particles[i].y_vel =buffer_recv[n_caracteristic_shared*i+3];
-        particles[i].x_force =buffer_recv[n_caracteristic_shared*i+4];
-        particles[i].y_force =buffer_recv[n_caracteristic_shared*i+5];
+    //
+    for (int i=0;i<4;i++){
+        recvMyValues(root->children[i],displacements_recv[i]);
     }
+
     //CHACUN A paticles à jour
 
   if (comm_rank==0) {
@@ -392,6 +430,7 @@ int main(int argc, char **argv)
             particles[i].mass=bcast_buff[i*5+4];
         }
     }
+    
 
   insert_all_particles(nparticles, particles, root);
 
