@@ -299,7 +299,8 @@ void all_move_particles(double step) {
     compute_force_in_node(&root->children[comm_rank]);
 
     //changer les tableaux counts_recv  displacements_recv
-    nParticulePerProcess = &root->children[comm_rank].n_particles;
+    nParticulePerProcess = root->children[comm_rank].n_particles;
+    printf("%d\n",nParticulePerProcess);
     free(my_values);
     my_values = malloc(nParticulePerProcess*n_caracteristic_shared*sizeof(double));
     for(int i = 0; i < comm_size; i++)
