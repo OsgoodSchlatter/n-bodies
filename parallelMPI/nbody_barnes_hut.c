@@ -241,6 +241,8 @@ void remplirMyValues(node_t *n,int actual_n_particule)
 
     if (n->particle)
     {
+        printf("comm_rank %d : i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / x_force = %f / y_force = %f\n",
+               comm_rank,actual_n_particule,n->particle->x_pos,n->particle->y_pos,n->particle->x_vel,n->particle->y_vel,n->particle->x_force,n->particle->y_force);
         my_values[actual_n_particule*n_caracteristic_shared] = n->particle->x_pos;
         my_values[actual_n_particule*n_caracteristic_shared+1] = n->particle->y_pos;
         my_values[actual_n_particule*n_caracteristic_shared+2] = n->particle->x_vel;
@@ -329,15 +331,15 @@ void all_move_particles(double step) {
 //        printf("\n\n");
 //        MPI_Barrier(MPI_COMM_WORLD);
 
-//  AFFICHAGE DE MY_VALUES
-    MPI_Barrier(MPI_COMM_WORLD);
-    for(int i = 0; i < nParticulePerProcess; i++)
-    {
-        printf("comm_rank %d : i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / x_force = %f / y_force = %f\n",
-               comm_rank,i,my_values[i*6+0],my_values[i*6+1],my_values[i*6+2],my_values[i*6+3],my_values[i*6+4],my_values[i*6+5]);
-    }
-    printf("\n");
-    MPI_Barrier(MPI_COMM_WORLD);
+////  AFFICHAGE DE MY_VALUES @problem: tous est egale à 0
+//    MPI_Barrier(MPI_COMM_WORLD);
+//    for(int i = 0; i < nParticulePerProcess; i++)
+//    {
+//        printf("comm_rank %d : i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / x_force = %f / y_force = %f\n",
+//               comm_rank,i,my_values[i*6+0],my_values[i*6+1],my_values[i*6+2],my_values[i*6+3],my_values[i*6+4],my_values[i*6+5]);
+//    }
+//    printf("\n");
+//    MPI_Barrier(MPI_COMM_WORLD);
 
     MPI_Allgatherv(my_values,
                    nParticulePerProcess*n_caracteristic_shared,
