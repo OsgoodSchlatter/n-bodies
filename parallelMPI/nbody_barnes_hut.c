@@ -234,23 +234,26 @@ void move_particles_in_node(node_t *n, double step, node_t *new_root)
 }
 
 /* compute the new position of the particles in a node */
-void remplirMyValues(node_t *n)
+void remplirMyValues(node_t *n,int actual_n_particule)
 {
     if (!n)
         return;
 
     if (n->particle)
     {
-        //rempli myValue
+        my_values[actual_n_particule*n_caracteristic_shared] = n->p.x_pos;
+        my_values[actual_n_particule*n_caracteristic_shared+1] = n->p.y_pos;
+        my_values[actual_n_particule*n_caracteristic_shared+2] = n->p.x_vel;
+        my_values[actual_n_particule*n_caracteristic_shared+3] = n->p.y_vel;
+        my_values[actual_n_particule*n_caracteristic_shared+4] = n->p.x_force;
+        my_values[actual_n_particule*n_caracteristic_shared+5] = n->p.y_force;
     }
     if (n->children)
     {
         int i;
         for (i = 0; i < 4; i++)
         {
-
-            remplirMyValues();
-
+            remplirMyValues(&n->children[i],actual_n_particule+i+1);
         }
     }
 }
@@ -288,37 +291,45 @@ void recvSendBuffer(node_t *n,int actual_n_particule)
 */
 void all_move_particles(double step) {
     //Un process par enfants
-    /* First calculate force for particles. */
-    for (int i=0;i<4;i++) {
-        if (comm_rank == i) {
-            compute_force_in_node(&root->children[i]);
-        }
-    }
-
-    //compute_force_in_node(root);
+//    for (int i=0;i<4;i++) {
+//        if (comm_rank == i) {
+//            compute_force_in_node(&root->children[i]);
+//        }
+//    }
+    compute_force_in_node(&root.children[comm_rank]);
 
     //changer les tableaux counts_recv  displacements_recv
-    //&root->children[i].npaticles
-    //counts_recv={&root->children[i].npaticles,&root->children[i].npaticles,&root->children[i].npaticles,&root->children[i].npaticles};
-    //displacements_recv={0,&root->children[0].npaticles,&root->children[0].npaticles+&root->children[1].npaticles,nparticle-&root->children[3].npaticles};
+    nParticulePerProcess = &root.children[comm_rank].n_particles;
     free(my_values);
-    remplirValues(root->children[comm_rank]);
+    my_values = malloc(nParticulePerProcess*n_caracteristic_shared*sizeof(double));
+    for(int i = 0; i < comm_size; i++)
+    {
+        //RECV n particles informations from
+        counts_recv[i] = &root->children[i].n_particles * n_caracteristic_shared;
+        if (i==0){
+            displacements_recv[i] = 0;
+        }
+        else {
+            displacements_recv[i] = displacements_recv[i-1]+ counts_recv[i-1];
+        }
+    }
+    remplirMyValues(root.children[comm_rank],0);
 
     MPI_Allgatherv(my_values,
-                   &root->children[comm_size].npaticles*n_caracteristic_shared,
+                   nParticulePerProcess*n_caracteristic_shared,
                     MPI_DOUBLE,
                     buffer_recv,
                     counts_recv,
                     displacements_recv,
                     MPI_DOUBLE,
                     MPI_COMM_WORLD);
-    //
+    //Deplacer donné de buffer send à particles
     for (int i=0;i<4;i++){
         recvMyValues(root->children[i],displacements_recv[i]);
     }
 
     //CHACUN A paticles à jour
-
+    MPI_Barrier(MPI_COMM_WORLD);
   if (comm_rank==0) {
       node_t *new_root = alloc_node();
       init_node(new_root, NULL, XMIN, XMAX, YMIN, YMAX);
@@ -330,28 +341,18 @@ void all_move_particles(double step) {
       root = new_root;
   }
   //ENVOYER ROOT POUR CHACUN
-  
+
 }
 
 void run_simulation()
 {
   double t = 0.0, dt = 0.01;
-
-    nParticulePerProcess = ((int) ((comm_rank+1)*nparticles/comm_size))-((int) ((comm_rank)*nparticles/comm_size));
-    //printf("%d : %d",comm_rank,nParticulePerProcess);
-    //ALLGATHERV particles
     n_caracteristic_shared=6;
-    my_values = malloc(nParticulePerProcess*n_caracteristic_shared*sizeof(double));
-    // Gestion des sources et de la destination des valeurs reçus
-    buffer_recv= malloc(nparticles*n_caracteristic_shared*sizeof(double));
     counts_recv= malloc(comm_size*sizeof(int));
     displacements_recv = malloc(comm_size*sizeof(int));
-    for(int i = 0; i < comm_size; i++)
-    {
-        counts_recv[i] = ((int) (nparticles/comm_size)) * n_caracteristic_shared;
-        displacements_recv[i] = (i*((int) (nparticles/comm_size))) * n_caracteristic_shared;
-    }
-    counts_recv[comm_size-1]=(nparticles-((int) ((comm_size-1)*nparticles/comm_size))) * n_caracteristic_shared;
+    // Gestion des sources et de la destination des valeurs reçus
+    buffer_recv= malloc(nparticles*n_caracteristic_shared*sizeof(double));
+
 
   while (t < T_FINAL && nparticles > 0)
   {
