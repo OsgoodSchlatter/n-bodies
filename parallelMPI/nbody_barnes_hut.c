@@ -432,6 +432,14 @@ int main(int argc, char **argv)
             particles[i].mass=bcast_buff[i*5+4];
         }
     }
+        MPI_Barrier(MPI_COMM_WORLD);
+    printf("\n Après Bcast\n");
+    for(int i = 0; i < nparticles; i++)
+    {
+        printf("comm_rank %d :i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / mass = %f\n",
+               comm_rank,i,particles[i].x_pos,particles[i].y_pos,particles[i].x_vel,particles[i].y_vel,particles[i].mass);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
 
 
   insert_all_particles(nparticles, particles, root);
