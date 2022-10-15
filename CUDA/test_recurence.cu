@@ -30,7 +30,7 @@ void init(){
 }
 
 void recursiveLaunch(int index,int lap){
-    if(graphEtage==actualGraphEtage){
+    if(index>n_node-n){
         return;
     }
     k_set<<<1,1>>>(valeur,index,lap);
