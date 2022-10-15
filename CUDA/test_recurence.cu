@@ -8,8 +8,8 @@
 int *compteur;
 
 __global__ void k_incremente(int* valeur){
-    if(valeur==5){
-        return 0;
+    if(valeur[0]==5){
+        return;
     }
     valeur+=1;
     k_incremente(valeur);
@@ -21,7 +21,7 @@ void init(){
 
 int main(int argc, char **argv){
     cudaMallocManaged(&compteur,sizeof(int));
-    init()
+    compteur=0;
     k_incremente<<<1,1>>>(compteur);
     cudaDeviceSynchronize();
 
