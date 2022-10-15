@@ -53,6 +53,7 @@ double* my_values;
 double* buffer_recv;
 int* counts_recv;
 int* displacements_recv ;
+int actual_n_particule;
 
 
 void init()
@@ -234,15 +235,13 @@ void move_particles_in_node(node_t *n, double step, node_t *new_root)
 }
 
 /* compute the new position of the particles in a node */
-void remplirMyValues(node_t *n,int actual_n_particule)
+void remplirMyValues(node_t *n)
 {
     if (!n)
         return;
 
     if (n->particle)
     {
-        printf("comm_rank %d : i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / x_force = %f / y_force = %f\n",
-               comm_rank,actual_n_particule,n->particle->x_pos,n->particle->y_pos,n->particle->x_vel,n->particle->y_vel,n->particle->x_force,n->particle->y_force);
         my_values[actual_n_particule*n_caracteristic_shared] = n->particle->x_pos;
         my_values[actual_n_particule*n_caracteristic_shared+1] = n->particle->y_pos;
         my_values[actual_n_particule*n_caracteristic_shared+2] = n->particle->x_vel;
@@ -256,13 +255,12 @@ void remplirMyValues(node_t *n,int actual_n_particule)
         int i;
         for (i = 0; i < 4; i++)
         {
-            printf("comm_rank %d : i = %d\n",comm_rank,actual_n_particule);
-            remplirMyValues(&n->children[i],actual_n_particule);
+            remplirMyValues(&n->children[i]);
         }
     }
 }
 
-void recvSendBuffer(node_t *n,int actual_n_particule)
+void recvSendBuffer(node_t *n)
 {
     if (!n)
         return;
@@ -275,13 +273,14 @@ void recvSendBuffer(node_t *n,int actual_n_particule)
         n->particle->y_vel =buffer_recv[n_caracteristic_shared*actual_n_particule+3];
         n->particle->x_force =buffer_recv[n_caracteristic_shared*actual_n_particule+4];
         n->particle->y_force =buffer_recv[n_caracteristic_shared*actual_n_particule+5];
+        actual_n_particule+=1;
     }
     if (n->children)
     {
         int i;
         for (i = 0; i < 4; i++)
         {
-            recvSendBuffer(&n->children[i],actual_n_particule+i+1);
+            recvSendBuffer(&n->children[i]);
 
         }
     }
@@ -305,7 +304,7 @@ void all_move_particles(double step) {
     //changer les tableaux counts_recv  displacements_recv
     nParticulePerProcess = root->children[comm_rank].n_particles;
     free(my_values);
-    my_values = malloc(nParticulePerProcess*n_caracteristic_shared*sizeof(double));
+    //my_values = malloc(nParticulePerProcess*n_caracteristic_shared*sizeof(double));
     for(int i = 0; i < comm_size; i++)
     {
         //RECV n particles informations from
@@ -317,7 +316,7 @@ void all_move_particles(double step) {
             displacements_recv[i] = displacements_recv[i-1]+ counts_recv[i-1];
         }
     }
-    remplirMyValues(&root->children[comm_rank],0);
+    remplirMyValues(&root->children[comm_rank]);
 
 //    // AFFICHAGE DES TABLEAU DE GESTION DE LA RECEPTION
 //        MPI_Barrier(MPI_COMM_WORLD);
@@ -352,8 +351,9 @@ void all_move_particles(double step) {
                     MPI_DOUBLE,
                     MPI_COMM_WORLD);
     //Deplacer donné de buffer send à particles
+
     for (int i=0;i<4;i++){
-        recvSendBuffer(&root->children[i],displacements_recv[i]);
+        recvSendBuffer(&root->children[i]);
     }
 
 //    MPI_Barrier(MPI_COMM_WORLD);
