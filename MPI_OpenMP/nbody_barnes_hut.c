@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <assert.h>
 #include <unistd.h>
+#include <mpi.h>
 
 #ifdef DISPLAY
 #include <X11/Xlib.h>
@@ -32,6 +33,11 @@ node_t *root;
 double sum_speed_sq = 0;
 double max_acc = 0;
 double max_speed = 0;
+double sum_speed_sq_local = 0;
+double max_acc_local = 0;
+double max_speed_local = 0;
+
+int comm_rank, comm_size;
 
 void init()
 {
@@ -40,14 +46,11 @@ void init()
   init_node(root, NULL, XMIN, XMAX, YMIN, YMAX);
 
 #ifdef DISPLAY
-      Display *theDisplay; /* These three variables are required to open the */
-    GC theGC;            /* particle plotting window.  They are externally */
-    Window theMain;      /* declared in ui.h but are also required here.   */
+  Display *theDisplay; /* These three variables are required to open the */
+  GC theGC;            /* particle plotting window.  They are externally */
+  Window theMain;      /* declared in ui.h but are also required here.   */
 #endif
-
 }
-
-
 
 /* compute the force that a particle with position (x_pos, y_pos) and mass 'mass'
  * applies to particle p
@@ -220,13 +223,26 @@ void move_particles_in_node(node_t *n, double step, node_t *new_root)
 void all_move_particles(double step)
 {
   /* First calculate force for particles. */
-  compute_force_in_node(root);
+  struct node *temp_node = root;
+  int count_kid = 0;
+  while (temp_node->children)
+  {
+    count_kid++;
+    temp_node = temp_node->children;
+  }
+  printf("there are %d kids\n", count_kid);
+
+  if (comm_rank == 0)
+  {
+    compute_force_in_node(root);
+  }
 
   node_t *new_root = alloc_node();
   init_node(new_root, NULL, XMIN, XMAX, YMIN, YMAX);
 
   /* then move all particles and return statistics */
   move_particles_in_node(root, step, new_root);
+  printf("it crashes here for mpi n°%d\n", comm_rank);
 
   free_node(root);
   root = new_root;
@@ -234,14 +250,68 @@ void all_move_particles(double step)
 
 void run_simulation()
 {
+  int counter = 0;
   double t = 0.0, dt = 0.01;
+  int nb_particules_per_proc = ((int)((comm_rank + 1) * nparticles / comm_size)) - ((int)(comm_rank * nparticles / comm_size));
+  printf("nbr particules = %d, comm rank = %d\n", nb_particules_per_proc, comm_rank);
+
+  int n_car_shared = 6;
+
+  int temp_values_count = nb_particules_per_proc * n_car_shared;
+  double *temp_values = malloc(temp_values_count * sizeof(double));
+
+  double *buffer_recv = malloc(nparticles * n_car_shared * sizeof(double));
+
+  int *counts_recv = malloc(comm_size * sizeof(int)), *displacements_recv = malloc(comm_size * sizeof(int));
+  // displacement ?
+  for (int i = 0; i < comm_size; i++)
+  {
+    counts_recv[i] = ((int)nparticles / comm_size) * n_car_shared;
+    displacements_recv[i] = i * ((int)nparticles / comm_size) * n_car_shared;
+  }
+  counts_recv[comm_size - 1] = (nparticles - ((int)(comm_size - 1) * nparticles / comm_size)) * n_car_shared;
 
   while (t < T_FINAL && nparticles > 0)
   {
     /* Update time. */
     t += dt;
     /* Move particles with the current and compute rms velocity. */
+    max_acc_local = max_acc;
+    max_speed_local = max_speed;
+    sum_speed_sq_local = 0;
+
     all_move_particles(dt);
+
+    int j = (int)(comm_rank * (nparticles / comm_size));
+    for (int i = 0; i < nb_particules_per_proc; i++)
+    {
+      temp_values[i * n_car_shared] = particles[j].x_pos;
+      temp_values[i * n_car_shared + 1] = particles[j].y_pos;
+      temp_values[i * n_car_shared + 2] = particles[j].x_vel;
+      temp_values[i * n_car_shared + 3] = particles[j].y_vel;
+      temp_values[i * n_car_shared + 4] = particles[j].x_force;
+      temp_values[i * n_car_shared + 5] = particles[j].y_force;
+      j++;
+    }
+
+    // on rassemble toutes les données de temp_values, mais de longeurs diff donc MPI_Allgather***v***
+    printf("counter = %d\n", counter);
+    MPI_Allgatherv(temp_values, temp_values_count, MPI_DOUBLE, buffer_recv, counts_recv, displacements_recv, MPI_DOUBLE, MPI_COMM_WORLD);
+    counter++;
+    for (int i = 0; i < nparticles; i++)
+    {
+      particles[i].x_pos = buffer_recv[i * n_car_shared];
+      particles[i].y_pos = buffer_recv[i * n_car_shared + 1];
+      particles[i].x_vel = buffer_recv[i * n_car_shared + 2];
+      particles[i].y_vel = buffer_recv[i * n_car_shared + 3];
+      particles[i].x_force = buffer_recv[i * n_car_shared + 4];
+      particles[i].y_force = buffer_recv[i * n_car_shared + 5];
+    }
+
+    MPI_Allreduce(&max_acc_local, &max_acc, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    MPI_Allreduce(&max_speed_local, &max_speed, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+    MPI_Reduce(&sum_speed_sq_local, &sum_speed_sq, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
     /* Adjust dt based on maximum speed and acceleration--this
        simple rule tries to insure that no velocity will change
@@ -274,6 +344,11 @@ void insert_all_particles(int nparticles, particle_t *particles, node_t *root)
 */
 int main(int argc, char **argv)
 {
+
+  MPI_Init(&argc, &argv);
+  MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &comm_rank);
+
   if (argc >= 2)
   {
     nparticles = atoi(argv[1]);
