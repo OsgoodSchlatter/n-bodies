@@ -333,15 +333,15 @@ void all_move_particles(double step) {
 //        printf("\n\n");
 //        MPI_Barrier(MPI_COMM_WORLD);
 
-//  AFFICHAGE DE MY_VALUES @problem: tous est egale à 0
-    MPI_Barrier(MPI_COMM_WORLD);
-    for(int i = 0; i < nParticulePerProcess; i++)
-    {
-        printf("comm_rank %d : i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / x_force = %f / y_force = %f\n",
-               comm_rank,i,my_values[i*6+0],my_values[i*6+1],my_values[i*6+2],my_values[i*6+3],my_values[i*6+4],my_values[i*6+5]);
-    }
-    printf("\n");
-    MPI_Barrier(MPI_COMM_WORLD);
+////  AFFICHAGE DE MY_VALUES
+//    MPI_Barrier(MPI_COMM_WORLD);
+//    for(int i = 0; i < nParticulePerProcess; i++)
+//    {
+//        printf("comm_rank %d : i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / x_force = %f / y_force = %f\n",
+//               comm_rank,i,my_values[i*6+0],my_values[i*6+1],my_values[i*6+2],my_values[i*6+3],my_values[i*6+4],my_values[i*6+5]);
+//    }
+//    printf("\n");
+//    MPI_Barrier(MPI_COMM_WORLD);
 
     MPI_Allgatherv(my_values,
                    nParticulePerProcess*n_caracteristic_shared,
@@ -357,13 +357,13 @@ void all_move_particles(double step) {
         recvSendBuffer(&root->children[i]);
     }
 
-//    MPI_Barrier(MPI_COMM_WORLD);
-//    for(int i = 0; i < nparticles; i++)
-//    {
-//        printf("comm_rank %d : i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / x_force = %f / y_force = %f\n",
-//               comm_rank,i,particles[i].x_pos,particles[i].y_pos,particles[i].x_vel,particles[i].y_vel,particles[i].x_force,particles[i].y_force);
-//    }
-//    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
+    for(int i = 0; i < nparticles; i++)
+    {
+        printf("comm_rank %d : i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / x_force = %f / y_force = %f\n",
+               comm_rank,i,particles[i].x_pos,particles[i].y_pos,particles[i].x_vel,particles[i].y_vel,particles[i].x_force,particles[i].y_force);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
 
     //CHACUN A paticles à jour
     MPI_Barrier(MPI_COMM_WORLD);
