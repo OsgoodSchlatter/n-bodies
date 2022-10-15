@@ -9,7 +9,7 @@
 
 
 int const graphEtage=2;
-int const n = 4**(graphEtage);
+int const n = 4*(graphEtage);
 
 node_t *root;
 
