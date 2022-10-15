@@ -5,15 +5,9 @@
 #include <cuda_runtime.h>
 //#include <helper_cuda.h>
 
-int *compteur;
+#include "kernel.cu"
 
-__global__ void k_incremente(int* valeur){
-    if(valeur[0]==5){
-        return;
-    }
-    valeur+=1;
-    k_incremente<<<1,1>>>(valeur);
-}
+int *compteur;
 
 void init(){
     compteur=0;
