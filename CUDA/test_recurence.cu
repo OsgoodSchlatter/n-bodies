@@ -12,7 +12,7 @@ __global__ void k_incremente(int* valeur){
         return;
     }
     valeur+=1;
-    k_incremente(valeur);
+    k_incremente<<<1,1>>>(valeur);
 }
 
 void init(){
