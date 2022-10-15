@@ -336,6 +336,7 @@ void all_move_particles(double step) {
         printf("comm_rank %d : i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / x_force = %f / y_force = %f\n",
                comm_rank,i,my_values[i*6+0],my_values[i*6+1],my_values[i*6+2],my_values[i*6+3],my_values[i*6+4],my_values[i*6+5]);
     }
+    printf("\n");
     MPI_Barrier(MPI_COMM_WORLD);
 
     MPI_Allgatherv(my_values,
