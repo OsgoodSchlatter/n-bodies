@@ -16,7 +16,7 @@ void init(){
 int main(int argc, char **argv){
     cudaMallocManaged(&compteur,sizeof(int));
     compteur=0;
-    k_incremente<<<1,1>>>(compteur);
+    h_k_incremente<<<1,1>>>(compteur);
     cudaDeviceSynchronize();
 
     printf("%d\n",compteur);
