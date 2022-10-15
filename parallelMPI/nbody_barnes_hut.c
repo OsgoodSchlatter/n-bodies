@@ -300,7 +300,7 @@ void all_move_particles(double step) {
 //        }
 //    }
     MPI_Barrier(MPI_COMM_WORLD);
-    if (comm_rank) {
+    if (comm_rank==0) {
         for (int i = 0; i < nparticles; i++) {
             printf("comm_rank %d : i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / x_force = %f / y_force = %f\n",
                    comm_rank, i, particles[i].x_pos, particles[i].y_pos, particles[i].x_vel, particles[i].y_vel,
@@ -368,7 +368,7 @@ void all_move_particles(double step) {
         recvSendBuffer(&root->children[i]);
     }
     MPI_Barrier(MPI_COMM_WORLD);
-    if (comm_rank) {
+    if (comm_rank==0) {
         for (int i = 0; i < nparticles; i++) {
             printf("comm_rank %d : i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / x_force = %f / y_force = %f\n",
                    comm_rank, i, particles[i].x_pos, particles[i].y_pos, particles[i].x_vel, particles[i].y_vel,
