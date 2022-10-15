@@ -8,8 +8,8 @@
 #include "nbody.h"
 
 
-int const *graphEtage;
-int const *n;
+int *graphEtage;
+int *n;
 
 node_t *root;
 
