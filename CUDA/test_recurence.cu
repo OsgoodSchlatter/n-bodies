@@ -5,11 +5,12 @@
 #include <cuda_runtime.h>
 //#include <helper_cuda.h>
 
+#include<math.h>
 #include "nbody.h"
 
 
 int const graphEtage=2;
-int const n = 4*(graphEtage);
+int const n = pow(4,graphEtage);
 
 node_t *root;
 
