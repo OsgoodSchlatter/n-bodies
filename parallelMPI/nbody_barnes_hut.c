@@ -241,6 +241,7 @@ void remplirMyValues(node_t *n,int actual_n_particule)
 
     if (n->particle)
     {
+        actual_n_particule+=1;
         printf("comm_rank %d : i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / x_force = %f / y_force = %f\n",
                comm_rank,actual_n_particule,n->particle->x_pos,n->particle->y_pos,n->particle->x_vel,n->particle->y_vel,n->particle->x_force,n->particle->y_force);
         my_values[actual_n_particule*n_caracteristic_shared] = n->particle->x_pos;
@@ -255,7 +256,7 @@ void remplirMyValues(node_t *n,int actual_n_particule)
         int i;
         for (i = 0; i < 4; i++)
         {
-            remplirMyValues(&n->children[i],actual_n_particule+i+1);
+            remplirMyValues(&n->children[i],actual_n_particule);
         }
     }
 }
