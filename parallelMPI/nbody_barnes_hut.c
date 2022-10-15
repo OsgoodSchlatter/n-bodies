@@ -305,7 +305,7 @@ void all_move_particles(double step) {
     for(int i = 0; i < comm_size; i++)
     {
         //RECV n particles informations from
-        counts_recv[i] = nParticulePerProcess * n_caracteristic_shared;
+        counts_recv[i] = root->children[i].n_particles; * n_caracteristic_shared;
         if (i==0){
             displacements_recv[i] = 0;
         }
@@ -314,7 +314,7 @@ void all_move_particles(double step) {
         }
     }
     remplirMyValues(&root->children[comm_rank],0);
-    
+
     // AFFICHAGE DES TABLEAU DE GESTION DE LA RECEPTION
         MPI_Barrier(MPI_COMM_WORLD);
         printf("\nComm_rank %d\n",comm_rank);
