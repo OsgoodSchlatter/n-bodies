@@ -186,8 +186,7 @@ void run_simulation()
 //        printf("\n\n");
 //        MPI_Barrier(MPI_COMM_WORLD);
 
-    while (t < T_FINAL && nparticles > 0)
-    {
+    while (t < T_FINAL && nparticles > 0) {
 //        printf("comm_rank %d : t = %f / dt = %f / max_acc = %f / max_speed = %f\n",comm_rank,t,dt,max_acc_global,max_speed_global);
 //        MPI_Barrier(MPI_COMM_WORLD);
 //        for(int i = 0; i < nparticles; i++)
@@ -206,20 +205,22 @@ void run_simulation()
         all_move_particles(dt);
 
         //init_my_value avec particles x_pos y_pos x_vel y_vel x_force y_force //INIT QUE LA OU IL Y A BESOIN
-        int j=(int) ((comm_rank)*nparticles/comm_size);
-        for(int i = 0; i < nParticulePerProcess; i++)
-        {
+        int j = (int) ((comm_rank) * nparticles / comm_size);
+        //#pragma omp ??
+        for (int i = 0; i < nParticulePerProcess; i++) {
             //printf("comm_rank %d : t = %f / i = %d / j = %d\n",comm_rank,t,i,j);
-            my_values[i*n_caracteristic_shared] = particles[j].x_pos;
-            my_values[i*n_caracteristic_shared+1] = particles[j].y_pos;
-            my_values[i*n_caracteristic_shared+2] = particles[j].x_vel;
-            my_values[i*n_caracteristic_shared+3] = particles[j].y_vel;
-            my_values[i*n_caracteristic_shared+4] = particles[j].x_force;
-            my_values[i*n_caracteristic_shared+5] = particles[j].y_force;
-            j+=1;
+            my_values[i * n_caracteristic_shared] = particles[j].x_pos;
+            my_values[i * n_caracteristic_shared + 1] = particles[j].y_pos;
+            my_values[i * n_caracteristic_shared + 2] = particles[j].x_vel;
+            my_values[i * n_caracteristic_shared + 3] = particles[j].y_vel;
+            my_values[i * n_caracteristic_shared + 4] = particles[j].x_force;
+            my_values[i * n_caracteristic_shared + 5] = particles[j].y_force;
+            j += 1;
         }
         MPI_Allgatherv(my_values,nParticulePerProcess*n_caracteristic_shared, MPI_DOUBLE, buffer_recv, counts_recv, displacements_recv, MPI_DOUBLE, MPI_COMM_WORLD);
         //Mise à jour de particles
+
+        //pragma omp ??
         for(int i = 0; i < nparticles; i++)
         {
             particles[i].x_pos =buffer_recv[n_caracteristic_shared*i];
@@ -231,7 +232,7 @@ void run_simulation()
         }
         // FIN Allgatherv particles
 
-        //ALLREDUCTION max_speed / max_acc
+        //ALLREDUCTION max_speed / max_acc //
         MPI_Allreduce(&max_acc_local,&max_acc_global,1,MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
         MPI_Allreduce(&max_speed_local,&max_speed_global,1,MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 

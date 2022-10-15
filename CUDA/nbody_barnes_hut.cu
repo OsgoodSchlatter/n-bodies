@@ -11,6 +11,10 @@
 #include <assert.h>
 #include <unistd.h>
 
+#include <cuda.h>
+#include <cuda_runtime.h>
+
+
 #ifdef DISPLAY
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>

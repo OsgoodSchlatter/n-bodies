@@ -24,29 +24,50 @@
 
 FILE *f_out = NULL;
 
-int nparticles = 1000; /* number of particles */
+int nparticles = 1500; /* number of particles */
 float T_FINAL = 1.0;   /* simulation end time */
 
 particle_t *particles;
 
 node_t *root;
 
+int comm_rank, comm_size;
+
 double sum_speed_sq = 0;
 double max_acc = 0;
 double max_speed = 0;
+
+double sum_speed_sq_global = 0;
+double max_acc_global = 0;
+double max_speed_global = 0;
+double max_acc_local = 0;
+double max_speed_local = 0;
+double sum_speed_sq_local = 0;
+
+int nParticulePerProcess;
+//printf("%d : %d",comm_rank,nParticulePerProcess);
+//ALLGATHERV particles
+int n_caracteristic_shared;
+double* my_values;
+// Gestion des sources et de la destination des valeurs reçus
+double* buffer_recv;
+int* counts_recv;
+int* displacements_recv ;
+
 
 void init()
 {
   init_alloc(8 * nparticles);
   root = malloc(sizeof(node_t));
   init_node(root, NULL, XMIN, XMAX, YMIN, YMAX);
+#ifdef DISPLAY
+  Display *theDisplay; /* These three variables are required to open the */
+  GC theGC;            /* particle plotting window.  They are externally */
+  Window theMain;      /* declared in ui.h but are also required here.   */
+#endif
 }
 
-#ifdef DISPLAY
-Display *theDisplay; /* These three variables are required to open the */
-GC theGC;            /* particle plotting window.  They are externally */
-Window theMain;      /* declared in ui.h but are also required here.   */
-#endif
+
 
 /* compute the force that a particle with position (x_pos, y_pos) and mass 'mass'
  * applies to particle p
@@ -148,7 +169,7 @@ void compute_force_in_node(node_t *n)
     int i;
     for (i = 0; i < 4; i++)
     {
-      compute_force_in_node(&n->children[i]);
+            compute_force_in_node(&n->children[i]);
     }
   }
 }
@@ -205,7 +226,9 @@ void move_particles_in_node(node_t *n, double step, node_t *new_root)
     int i;
     for (i = 0; i < 4; i++)
     {
-      move_particles_in_node(&n->children[i], step, new_root);
+        //if (comm_rank==i){
+            move_particles_in_node(&n->children[i], step, new_root);
+        //}
     }
   }
 }
@@ -216,24 +239,80 @@ void move_particles_in_node(node_t *n, double step, node_t *new_root)
   Update positions, velocity, and acceleration.
   Return local computations.
 */
-void all_move_particles(double step)
-{
-  /* First calculate force for particles. */
-  compute_force_in_node(root);
+void all_move_particles(double step) {
+    //Un process par enfants
+    /* First calculate force for particles. */
+    for (int i=0;i<4;i++) {
+        if (comm_rank == i) {
+            compute_force_in_node(&root->children[i]);
+        }
+    }
 
-  node_t *new_root = alloc_node();
-  init_node(new_root, NULL, XMIN, XMAX, YMIN, YMAX);
+    //compute_force_in_node(root);
 
-  /* then move all particles and return statistics */
-  move_particles_in_node(root, step, new_root);
+    int j=(int) ((comm_rank)*nparticles/comm_size);
+    for(int i = 0; i < nParticulePerProcess; i++)
+    {
+        //printf("comm_rank %d : t = %f / i = %d / j = %d\n",comm_rank,t,i,j);
+        my_values[i*n_caracteristic_shared] = particles[j].x_pos;
+        my_values[i*n_caracteristic_shared+1] = particles[j].y_pos;
+        my_values[i*n_caracteristic_shared+2] = particles[j].x_vel;
+        my_values[i*n_caracteristic_shared+3] = particles[j].y_vel;
+        my_values[i*n_caracteristic_shared+4] = particles[j].x_force;
+        my_values[i*n_caracteristic_shared+5] = particles[j].y_force;
+        j+=1;
+    }
+    MPI_Allgatherv(my_values,
+                    nParticulePerProcess*n_caracteristic_shared,
+                    MPI_DOUBLE,
+                    buffer_recv,
+                    counts_recv,
+                    displacements_recv,
+                    MPI_DOUBLE,
+                    MPI_COMM_WORLD);
+    for(int i = 0; i < nparticles; i++)
+    {
+        particles[i].x_pos =buffer_recv[n_caracteristic_shared*i];
+        particles[i].y_pos =buffer_recv[n_caracteristic_shared*i+1];
+        particles[i].x_vel =buffer_recv[n_caracteristic_shared*i+2];
+        particles[i].y_vel =buffer_recv[n_caracteristic_shared*i+3];
+        particles[i].x_force =buffer_recv[n_caracteristic_shared*i+4];
+        particles[i].y_force =buffer_recv[n_caracteristic_shared*i+5];
+    }
+    //CHACUN A paticles à jour
 
-  free_node(root);
-  root = new_root;
+  if (comm_rank==0) {
+      node_t *new_root = alloc_node();
+      init_node(new_root, NULL, XMIN, XMAX, YMIN, YMAX);
+
+      /* then move all particles and return statistics */
+      move_particles_in_node(root, step, new_root);
+
+      free_node(root);
+      root = new_root;
+  }
+  //ENVOYER ROOT POUR CHACUN
 }
 
 void run_simulation()
 {
   double t = 0.0, dt = 0.01;
+
+    nParticulePerProcess = ((int) ((comm_rank+1)*nparticles/comm_size))-((int) ((comm_rank)*nparticles/comm_size));
+    //printf("%d : %d",comm_rank,nParticulePerProcess);
+    //ALLGATHERV particles
+    n_caracteristic_shared=6;
+    my_values = malloc(nParticulePerProcess*n_caracteristic_shared*sizeof(double));
+    // Gestion des sources et de la destination des valeurs reçus
+    buffer_recv= malloc(nparticles*n_caracteristic_shared*sizeof(double));
+    counts_recv= malloc(comm_size*sizeof(int));
+    displacements_recv = malloc(comm_size*sizeof(int));
+    for(int i = 0; i < comm_size; i++)
+    {
+        counts_recv[i] = ((int) (nparticles/comm_size)) * n_caracteristic_shared;
+        displacements_recv[i] = (i*((int) (nparticles/comm_size))) * n_caracteristic_shared;
+    }
+    counts_recv[comm_size-1]=(nparticles-((int) ((comm_size-1)*nparticles/comm_size))) * n_caracteristic_shared;
 
   while (t < T_FINAL && nparticles > 0)
   {
@@ -258,6 +337,7 @@ void run_simulation()
   }
 }
 
+//PLUS TARD : PASSER UN QUART DE MAP si process puis allgather + root.first have children chacun de ceux la
 /* create a quad-tree from an array of particles */
 void insert_all_particles(int nparticles, particle_t *particles, node_t *root)
 {
@@ -273,6 +353,10 @@ void insert_all_particles(int nparticles, particle_t *particles, node_t *root)
 */
 int main(int argc, char **argv)
 {
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &comm_rank);
+
   if (argc >= 2)
   {
     nparticles = atoi(argv[1]);
@@ -286,50 +370,79 @@ int main(int argc, char **argv)
 
   /* Allocate global shared arrays for the particles data set. */
   particles = malloc(sizeof(particle_t) * nparticles);
-  all_init_particles(nparticles, particles);
+  double* bcast_buff = malloc(sizeof(double) * 5 * nparticles); //x_pos,y_pos,x_vel,y_vel,mass
+    if (comm_rank==0){
+        all_init_particles(nparticles, particles);
+
+        for (int i = 0; i < nparticles; i++) {
+            bcast_buff[i*5+0]=particles[i].x_pos;
+            bcast_buff[i*5+1]=particles[i].y_pos;
+            bcast_buff[i*5+2]=particles[i].x_vel;
+            bcast_buff[i*5+3]=particles[i].y_vel;
+            bcast_buff[i*5+4]=particles[i].mass;
+        }
+    }
+    MPI_Bcast(bcast_buff,5 * nparticles,MPI_DOUBLE,0,MPI_COMM_WORLD);
+    if (comm_rank!=0){
+        for (int i = 0; i < nparticles; i++) {
+            particles[i].x_pos=bcast_buff[i*5+0];
+            particles[i].y_pos=bcast_buff[i*5+1];
+            particles[i].x_vel=bcast_buff[i*5+2];
+            particles[i].y_vel=bcast_buff[i*5+3];
+            particles[i].mass=bcast_buff[i*5+4];
+        }
+    }
+
   insert_all_particles(nparticles, particles, root);
 
-  /* Initialize thread data structures */
+    if (comm_rank==0) {
+        /* Initialize thread data structures */
 #ifdef DISPLAY
-  /* Open an X window to display the particles */
-  simple_init(100, 100, DISPLAY_SIZE, DISPLAY_SIZE);
+        /* Open an X window to display the particles */
+        simple_init(100, 100, DISPLAY_SIZE, DISPLAY_SIZE);
 #endif
 
-  struct timeval t1, t2;
-  gettimeofday(&t1, NULL);
+        struct timeval t1;
+        gettimeofday(&t1, NULL);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
 
   /* Main thread starts simulation ... */
   run_simulation();
 
-  gettimeofday(&t2, NULL);
 
-  double duration = (t2.tv_sec - t1.tv_sec) + ((t2.tv_usec - t1.tv_usec) / 1e6);
+    MPI_Finalize();
+    if (comm_rank==0) {
+        struct timeval t2;
+        gettimeofday(&t2, NULL);
+
+        //double duration = (t2.tv_sec - t1.tv_sec) + ((t2.tv_usec - t1.tv_usec) / 1e6);
 
 #ifdef DUMP_RESULT
-  FILE *f_out = fopen("particles.log", "w");
-  assert(f_out);
-  print_particles(f_out, root);
-  fclose(f_out);
+        FILE *f_out = fopen("particles.log", "w");
+        assert(f_out);
+        print_particles(f_out, root);
+        fclose(f_out);
 #endif
 
-  printf("-----------------------------\n");
-  printf("nparticles: %d\n", nparticles);
-  printf("T_FINAL: %f\n", T_FINAL);
-  printf("-----------------------------\n");
-  printf("Simulation took %lf s to complete\n", duration);
+        printf("-----------------------------\n");
+        printf("nparticles: %d\n", nparticles);
+        printf("T_FINAL: %f\n", T_FINAL);
+        printf("-----------------------------\n");
+        //printf("Simulation took %lf s to complete\n", duration);
 
 #ifdef DISPLAY
-  node_t *n = root;
-  clear_display();
-  draw_node(n);
-  flush_display();
+        node_t *n = root;
+        clear_display();
+        draw_node(n);
+        flush_display();
 
-  printf("Hit return to close the window.");
+        printf("Hit return to close the window.");
 
-  getchar();
-  /* Close the X window used to display the particles */
-  XCloseDisplay(theDisplay);
+        getchar();
+        /* Close the X window used to display the particles */
+        XCloseDisplay(theDisplay);
 #endif
-
+    }
   return 0;
 }
