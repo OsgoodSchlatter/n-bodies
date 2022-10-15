@@ -7,7 +7,7 @@
 
 int *compteur;
 
-__global__ k_incremente(int* valeur){
+__global__ void k_incremente(int* valeur){
     if(valeur==5){
         return 0;
     }
