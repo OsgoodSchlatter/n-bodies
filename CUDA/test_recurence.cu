@@ -15,8 +15,8 @@ int n_node=0;
 
 int *valeur;
 
-__global__ void k_set(int *valeur,int index){
-    valeur[index]=1;
+__global__ void k_set(int *valeur,int index,int lap){
+    valeur[index]=lap;
 }
 
 
@@ -29,21 +29,19 @@ void init(){
 
 }
 
-void recursiveLaunch(int actualGraphEtage){
+void recursiveLaunch(int index,int lap){
     if(graphEtage==actualGraphEtage){
         return;
     }
-    for (int i=0;i<4;i++){
-        k_set<<<1,1>>>(valeur);
-        recursiveLaunch(actualGraphEtage+1);
-    }
+    k_set<<<1,1>>>(valeur,index,lap);
+    recursiveLaunch(index+1,lap);
 }
 
 int main(int argc, char **argv){
     init();
     cudaMallocManaged(&valeur,n_node*sizeof(int));
     for (int i =0;i<n_node;i++){
-        valuer[0]=-1;
+        valuer[i]=-1;
     }
 
     bool graphCreated=false;
@@ -53,7 +51,7 @@ int main(int argc, char **argv){
         if(!graphCreated){
             cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
 
-            recusiveLaunch();
+            recusiveLaunch(valeur,istep);
 
             cudaStreamEndCapture(stream, &graph);
             cudaGraphInstantiate(&instance, graph, NULL, NULL, 0);

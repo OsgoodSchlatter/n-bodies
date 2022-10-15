@@ -330,6 +330,7 @@ void all_move_particles(double step) {
       root = new_root;
   }
   //ENVOYER ROOT POUR CHACUN
+  
 }
 
 void run_simulation()
@@ -430,7 +431,7 @@ int main(int argc, char **argv)
             particles[i].mass=bcast_buff[i*5+4];
         }
     }
-    
+
 
   insert_all_particles(nparticles, particles, root);
 
