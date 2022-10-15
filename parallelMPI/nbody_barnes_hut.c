@@ -256,7 +256,7 @@ void remplirMyValues(node_t *n,int actual_n_particule)
         int i;
         for (i = 0; i < 4; i++)
         {
-            printf("comm_rank %d : i = %d",comm_rank,actual_n_particule);
+            printf("comm_rank %d : i = %d\n",comm_rank,actual_n_particule);
             remplirMyValues(&n->children[i],actual_n_particule);
         }
     }
