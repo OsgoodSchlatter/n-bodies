@@ -5,22 +5,27 @@
 #include <cuda_runtime.h>
 //#include <helper_cuda.h>
 
-#include "kernel.cu"
+#include "nbody.h"
 
-int *compteur;
+
+int const graphEtage=2;
+int const n = 4**(graphEtage);
+
+node_t *root;
+
 
 void init(){
-    compteur=0;
+    printf("%d\n",n);
 }
 
 int main(int argc, char **argv){
-    cudaMallocManaged(&compteur,sizeof(int));
-    compteur=0;
-    h_k_incremente<<<1,1>>>(compteur);
-    cudaDeviceSynchronize();
+    //cudaMallocManaged(&compteur,sizeof(int));
+    init();
 
-    printf("%d\n",compteur);
+    //cudaDeviceSynchronize();
 
-    cudaFree(compteur);
+
+
+    //cudaFree(compteur);
     return 0;
 }
