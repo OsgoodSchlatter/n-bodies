@@ -310,6 +310,7 @@ void all_move_particles(double step) {
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
+    //On pourrait faire passer que x_force et y force dans cette partie
     compute_force_in_node(&root->children[comm_rank]);
 
     //changer les tableaux counts_recv  displacements_recv
@@ -389,6 +390,7 @@ void all_move_particles(double step) {
 
       free_node(root);
       root = new_root;
+      printf("OUII");
   }
   //ENVOYER ROOT POUR CHACUN
 
