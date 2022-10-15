@@ -53,7 +53,7 @@ double* my_values;
 double* buffer_recv;
 int* counts_recv;
 int* displacements_recv ;
-int actual_n_particule;
+int actual_n_particule=0;
 
 
 void init()
@@ -304,7 +304,7 @@ void all_move_particles(double step) {
     //changer les tableaux counts_recv  displacements_recv
     nParticulePerProcess = root->children[comm_rank].n_particles;
     free(my_values);
-    //my_values = malloc(nParticulePerProcess*n_caracteristic_shared*sizeof(double));
+    my_values = malloc(nParticulePerProcess*n_caracteristic_shared*sizeof(double));
     for(int i = 0; i < comm_size; i++)
     {
         //RECV n particles informations from
@@ -316,6 +316,7 @@ void all_move_particles(double step) {
             displacements_recv[i] = displacements_recv[i-1]+ counts_recv[i-1];
         }
     }
+    actual_n_particule=0;
     remplirMyValues(&root->children[comm_rank]);
 
 //    // AFFICHAGE DES TABLEAU DE GESTION DE LA RECEPTION
@@ -351,7 +352,7 @@ void all_move_particles(double step) {
                     MPI_DOUBLE,
                     MPI_COMM_WORLD);
     //Deplacer donné de buffer send à particles
-
+    actual_n_particule=0;
     for (int i=0;i<4;i++){
         recvSendBuffer(&root->children[i]);
     }
