@@ -300,7 +300,6 @@ void all_move_particles(double step) {
 
     //changer les tableaux counts_recv  displacements_recv
     nParticulePerProcess = root->children[comm_rank].n_particles;
-    printf("%d\n",nParticulePerProcess);
     free(my_values);
     my_values = malloc(nParticulePerProcess*n_caracteristic_shared*sizeof(double));
     for(int i = 0; i < comm_size; i++)
@@ -315,6 +314,20 @@ void all_move_particles(double step) {
         }
     }
     remplirMyValues(&root->children[comm_rank],0);
+    
+    // AFFICHAGE DES TABLEAU DE GESTION DE LA RECEPTION
+        MPI_Barrier(MPI_COMM_WORLD);
+        printf("\nComm_rank %d\n",comm_rank);
+        printf("\n    counts_recv \n");
+        for (int i = 0 ;i<comm_size ;i++){
+            printf("%d ",counts_recv[i]);
+        }
+        printf("\n    displacements_recv \n");
+        for (int i = 0 ;i<comm_size ;i++){
+            printf("%d ",displacements_recv[i]);
+        }
+        printf("\n\n");
+        MPI_Barrier(MPI_COMM_WORLD);
 
     MPI_Allgatherv(my_values,
                    nParticulePerProcess*n_caracteristic_shared,
