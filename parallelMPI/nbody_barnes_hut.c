@@ -241,12 +241,12 @@ void remplirMyValues(node_t *n,int actual_n_particule)
 
     if (n->particle)
     {
-        my_values[actual_n_particule*n_caracteristic_shared] = n->particle.x_pos;
-        my_values[actual_n_particule*n_caracteristic_shared+1] = n->particle.y_pos;
-        my_values[actual_n_particule*n_caracteristic_shared+2] = n->particle.x_vel;
-        my_values[actual_n_particule*n_caracteristic_shared+3] = n->particle.y_vel;
-        my_values[actual_n_particule*n_caracteristic_shared+4] = n->particle.x_force;
-        my_values[actual_n_particule*n_caracteristic_shared+5] = n->particle.y_force;
+        my_values[actual_n_particule*n_caracteristic_shared] = n->particle->x_pos;
+        my_values[actual_n_particule*n_caracteristic_shared+1] = n->particle->y_pos;
+        my_values[actual_n_particule*n_caracteristic_shared+2] = n->particle->x_vel;
+        my_values[actual_n_particule*n_caracteristic_shared+3] = n->particle->y_vel;
+        my_values[actual_n_particule*n_caracteristic_shared+4] = n->particle->x_force;
+        my_values[actual_n_particule*n_caracteristic_shared+5] = n->particle->y_force;
     }
     if (n->children)
     {
@@ -299,7 +299,7 @@ void all_move_particles(double step) {
     compute_force_in_node(&root->children[comm_rank]);
 
     //changer les tableaux counts_recv  displacements_recv
-    nParticulePerProcess = &root->children[comm_rank]->n_particles;
+    nParticulePerProcess = &root->children[comm_rank].n_particles;
     free(my_values);
     my_values = malloc(nParticulePerProcess*n_caracteristic_shared*sizeof(double));
     for(int i = 0; i < comm_size; i++)
@@ -313,7 +313,7 @@ void all_move_particles(double step) {
             displacements_recv[i] = displacements_recv[i-1]+ counts_recv[i-1];
         }
     }
-    remplirMyValues(root->children[comm_rank],0);
+    remplirMyValues(&root->children[comm_rank],0);
 
     MPI_Allgatherv(my_values,
                    nParticulePerProcess*n_caracteristic_shared,
@@ -325,7 +325,7 @@ void all_move_particles(double step) {
                     MPI_COMM_WORLD);
     //Deplacer donné de buffer send à particles
     for (int i=0;i<4;i++){
-        recvSendBuffer(root->children[i],displacements_recv[i]);
+        recvSendBuffer(&root->children[i],displacements_recv[i]);
     }
 
     //CHACUN A paticles à jour
