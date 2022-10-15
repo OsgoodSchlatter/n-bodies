@@ -315,19 +315,28 @@ void all_move_particles(double step) {
     }
     remplirMyValues(&root->children[comm_rank],0);
 
-    // AFFICHAGE DES TABLEAU DE GESTION DE LA RECEPTION
-        MPI_Barrier(MPI_COMM_WORLD);
-        printf("\nComm_rank %d nParticules %d\n",comm_rank,nParticulePerProcess);
-        printf("\n    counts_recv \n");
-        for (int i = 0 ;i<comm_size ;i++){
-            printf("%d ",counts_recv[i]);
-        }
-        printf("\n    displacements_recv \n");
-        for (int i = 0 ;i<comm_size ;i++){
-            printf("%d ",displacements_recv[i]);
-        }
-        printf("\n\n");
-        MPI_Barrier(MPI_COMM_WORLD);
+//    // AFFICHAGE DES TABLEAU DE GESTION DE LA RECEPTION
+//        MPI_Barrier(MPI_COMM_WORLD);
+//        printf("\nComm_rank %d nParticules %d\n",comm_rank,nParticulePerProcess);
+//        printf("\n    counts_recv \n");
+//        for (int i = 0 ;i<comm_size ;i++){
+//            printf("%d ",counts_recv[i]);
+//        }
+//        printf("\n    displacements_recv \n");
+//        for (int i = 0 ;i<comm_size ;i++){
+//            printf("%d ",displacements_recv[i]);
+//        }
+//        printf("\n\n");
+//        MPI_Barrier(MPI_COMM_WORLD);
+
+//  AFFICHAGE DE MY_VALUES
+    MPI_Barrier(MPI_COMM_WORLD);
+    for(int i = 0; i < nParticulePerProcess; i++)
+    {
+        printf("comm_rank %d : i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / x_force = %f / y_force = %f\n",
+               comm_rank,i,my_values[i*6+0],my_values[i*6+1],my_values[i*6+2],my_values[i*6+3],my_values[i*6+4],my_values[i*6+5]);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
 
     MPI_Allgatherv(my_values,
                    nParticulePerProcess*n_caracteristic_shared,
@@ -342,13 +351,13 @@ void all_move_particles(double step) {
         recvSendBuffer(&root->children[i],displacements_recv[i]);
     }
 
-/*    MPI_Barrier(MPI_COMM_WORLD);
-    for(int i = 0; i < nparticles; i++)
-    {
-        printf("comm_rank %d : i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / x_force = %f / y_force = %f\n",
-               comm_rank,i,particles[i].x_pos,particles[i].y_pos,particles[i].x_vel,particles[i].y_vel,particles[i].x_force,particles[i].y_force);
-    }
-    MPI_Barrier(MPI_COMM_WORLD);*/
+//    MPI_Barrier(MPI_COMM_WORLD);
+//    for(int i = 0; i < nparticles; i++)
+//    {
+//        printf("comm_rank %d : i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / x_force = %f / y_force = %f\n",
+//               comm_rank,i,particles[i].x_pos,particles[i].y_pos,particles[i].x_vel,particles[i].y_vel,particles[i].x_force,particles[i].y_force);
+//    }
+//    MPI_Barrier(MPI_COMM_WORLD);
 
     //CHACUN A paticles à jour
     MPI_Barrier(MPI_COMM_WORLD);
