@@ -282,6 +282,7 @@ int main(int argc, char **argv)
   particles = malloc(sizeof(particle_t) * nparticles);
   //
   double* bcast_buff = malloc(sizeof(double) * 5 * nparticles); //x_pos,y_pos,x_vel,y_vel,mass
+
   if (comm_rank==0){
       all_init_particles(nparticles, particles);
 
@@ -302,6 +303,7 @@ int main(int argc, char **argv)
 //    }
 //    MPI_Barrier(MPI_COMM_WORLD);
   MPI_Bcast(bcast_buff,5 * nparticles,MPI_DOUBLE,0,MPI_COMM_WORLD);
+
     if (comm_rank!=0){
         for (int i = 0; i < nparticles; i++) {
             particles[i].x_pos=bcast_buff[i*5+0];
