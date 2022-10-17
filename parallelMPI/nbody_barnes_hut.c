@@ -197,6 +197,8 @@ void move_particle(particle_t *p, double step, node_t *new_root)
   max_acc = MAX(max_acc, cur_acc);
   max_speed = MAX(max_speed, cur_speed);
 
+  //ici on check si c'est dans le bon noeud ou pas
+  //envoyer dans le bon noeud
   p->node = NULL;
   if (p->x_pos < new_root->x_min ||
       p->x_pos > new_root->x_max ||
