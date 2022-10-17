@@ -196,7 +196,9 @@ void move_particle(particle_t *p, double step, node_t *new_root)
   sum_speed_sq += speed_sq;
   max_acc = MAX(max_acc, cur_acc);
   max_speed = MAX(max_speed, cur_speed);
-
+  //VERIFIER SI AU BONNE ENDROIT
+  //ENVOYER OU PAS AU BON PROCESS MPI
+  //CE PROCESS L'insrt dans son root
   p->node = NULL;
   if (p->x_pos < new_root->x_min ||
       p->x_pos > new_root->x_max ||
