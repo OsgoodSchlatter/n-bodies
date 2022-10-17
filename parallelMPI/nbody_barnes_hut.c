@@ -211,7 +211,9 @@ void move_particle(particle_t *p, double step, node_t *new_root)
 void move_particles_in_node(node_t *n, double step, node_t *new_root)
 {
   if (!n)
+  {
     return;
+  }
 
   if (n->particle)
   {
@@ -364,6 +366,7 @@ void send_root(struct node *root)
   Update positions, velocity, and acceleration.
   Return local computations.
 */
+<<<<<<< HEAD
 void all_move_particles(double step)
 {
   // Un process par enfants
@@ -384,6 +387,26 @@ void all_move_particles(double step)
     printf("\n");
   }
   MPI_Barrier(MPI_COMM_WORLD);
+=======
+void all_move_particles(double step)
+{
+  // Un process par enfants
+  //    for (int i=0;i<4;i++) {
+  //        if (comm_rank == i) {
+  //            compute_force_in_node(&root->children[i]);
+  //        }
+  //    }
+  // MPI_Barrier(MPI_COMM_WORLD);
+  // if (comm_rank==0) {
+  //     for (int i = 0; i < nparticles; i++) {
+  //         printf("comm_rank %d : i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / x_force = %f / y_force = %f\n",
+  //                comm_rank, i, particles[i].x_pos, particles[i].y_pos, particles[i].x_vel, particles[i].y_vel,
+  //                particles[i].x_force, particles[i].y_force);
+  //     }
+  //     printf("\n");
+  // }
+  // MPI_Barrier(MPI_COMM_WORLD);
+>>>>>>> 4e429311ee9103de3a5d15ff271261cf9f1115d1
 
   // On pourrait faire passer que x_force et y force dans cette partie
   compute_force_in_node(&root->children[comm_rank]);
@@ -404,6 +427,7 @@ void all_move_particles(double step)
     {
       displacements_recv[i] = displacements_recv[i - 1] + counts_recv[i - 1];
     }
+<<<<<<< HEAD
   }
   actual_n_particule = 0;
   remplirMyValues(&root->children[comm_rank]);
@@ -465,15 +489,77 @@ void all_move_particles(double step)
   {
     node_t *new_root = alloc_node();
     init_node(new_root, NULL, XMIN, XMAX, YMIN, YMAX);
+=======
+    // MPI_Barrier(MPI_COMM_WORLD);
+    // if (comm_rank==0) {
+    //     for (int i = 0; i < nparticles; i++) {
+    //         printf("comm_rank %d : i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / x_force = %f / y_force = %f\n",
+    //                comm_rank, i, particles[i].x_pos, particles[i].y_pos, particles[i].x_vel, particles[i].y_vel,
+    //                particles[i].x_force, particles[i].y_force);
+    //     }
+    //     printf("\n");
+    // }
+    // MPI_Barrier(MPI_COMM_WORLD);insert_particle
+
+    // CHACUN A paticles à jour
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    if (comm_rank == 0)
+    {
+      node_t *new_root = alloc_node();
+      init_node(new_root, NULL, XMIN, XMAX, YMIN, YMAX);
+>>>>>>> 4e429311ee9103de3a5d15ff271261cf9f1115d1
 
     /* then move all particles and return statistics */
     move_particles_in_node(root, step, new_root);
 
+<<<<<<< HEAD
     free_node(root);
     root = new_root;
     printf("OUII");
   }
   // ENVOYER ROOT POUR CHACUN
+=======
+      free_node(root);
+      root = new_root;
+    }
+    // Envoyer particles a todos
+    double *bcast_buff = malloc(sizeof(double) * 4 * nparticles); // x_pos,y_pos,x_vel,y_vel,mass
+    if (comm_rank == 0)
+    {
+      for (int i = 0; i < nparticles; i++)
+      {
+        bcast_buff[i * 4 + 0] = particles[i].x_pos;
+        bcast_buff[i * 4 + 1] = particles[i].y_pos;
+        bcast_buff[i * 4 + 2] = particles[i].x_vel;
+        bcast_buff[i * 4 + 3] = particles[i].y_vel;
+        // bcast_buff[i*5+4]=particles[i].mass;
+      }
+    }
+    MPI_Bcast(bcast_buff, 4 * nparticles, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    if (comm_rank != 0)
+    {
+      for (int i = 0; i < nparticles; i++)
+      {
+        particles[i].x_pos = bcast_buff[i * 4 + 0];
+        particles[i].y_pos = bcast_buff[i * 4 + 1];
+        particles[i].x_vel = bcast_buff[i * 4 + 2];
+        particles[i].y_vel = bcast_buff[i * 4 + 3];
+        // particles[i].mass=bcast_buff[i*5+4];
+      }
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    // ENVOYER ROOT POUR CHACUN
+    node_t *new_root2 = alloc_node();
+    init_node(new_root2, NULL, XMIN, XMAX, YMIN, YMAX);
+    int i;
+    for (i = 0; i < nparticles; i++)
+    {
+      insert_particle(&particles[i], new_root2);
+    }
+    free_node(root);
+    root = new_root2;
+>>>>>>> 4e429311ee9103de3a5d15ff271261cf9f1115d1
 
   //---- envoi ----
   // serialiser la struct node sans les pointeur parent et children
@@ -519,19 +605,24 @@ void run_simulation()
     /* Move particles with the current and compute rms velocity. */
     all_move_particles(dt);
 
+    MPI_Bcast(&max_acc, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&max_speed, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
     /* Adjust dt based on maximum speed and acceleration--this
        simple rule tries to insure that no velocity will change
        by more than 10% */
-
     dt = 0.1 * max_speed / max_acc;
 
     /* Plot the movement of the particle */
+    if (comm_rank == 0)
+    {
 #if DISPLAY
-    node_t *n = root;
-    clear_display();
-    draw_node(n);
-    flush_display();
+      node_t *n = root;
+      clear_display();
+      draw_node(n);
+      flush_display();
 #endif
+    }
   }
 }
 
@@ -568,6 +659,7 @@ int main(int argc, char **argv)
 
   /* Allocate global shared arrays for the particles data set. */
   particles = malloc(sizeof(particle_t) * nparticles);
+<<<<<<< HEAD
   double *bcast_buff = malloc(sizeof(double) * 5 * nparticles); // x_pos,y_pos,x_vel,y_vel,mass
   if (comm_rank == 0)
   {
@@ -580,6 +672,20 @@ int main(int argc, char **argv)
       bcast_buff[i * 5 + 2] = particles[i].x_vel;
       bcast_buff[i * 5 + 3] = particles[i].y_vel;
       bcast_buff[i * 5 + 4] = particles[i].mass;
+=======
+    double *bcast_buff = malloc(sizeof(double) * 5 * nparticles); // x_pos,y_pos,x_vel,y_vel,mass
+    if (comm_rank == 0)
+    {
+      all_init_particles(nparticles, particles);
+      for (int i = 0; i < nparticles; i++)
+      {
+        bcast_buff[i * 5 + 0] = particles[i].x_pos;
+        bcast_buff[i * 5 + 1] = particles[i].y_pos;
+        bcast_buff[i * 5 + 2] = particles[i].x_vel;
+        bcast_buff[i * 5 + 3] = particles[i].y_vel;
+        bcast_buff[i * 5 + 4] = particles[i].mass;
+      }
+>>>>>>> 4e429311ee9103de3a5d15ff271261cf9f1115d1
     }
   }
   MPI_Bcast(bcast_buff, 5 * nparticles, MPI_DOUBLE, 0, MPI_COMM_WORLD);
