@@ -442,7 +442,7 @@ void run_simulation()
   while (t < T_FINAL && nparticles > 0)
   {
     /* Update time. */
-    printf("comm_rank %d : t = %f / dt = %f / max_acc = %f / max_speed = %f\n",comm_rank,t,dt,max_acc_global,max_speed_global);
+    //printf("comm_rank %d : t = %f / dt = %f / max_acc = %f / max_speed = %f\n",comm_rank,t,dt,max_acc_global,max_speed_global);
 //      MPI_Barrier(MPI_COMM_WORLD);
 //      for(int i = 0; i < nparticles; i++)
 //      {
@@ -540,7 +540,7 @@ int main(int argc, char **argv)
 
 
   insert_all_particles(nparticles, particles, root);
-
+    struct timeval t1, t2;
     if (comm_rank==0) {
         /* Initialize thread data structures */
 #ifdef DISPLAY
@@ -548,7 +548,6 @@ int main(int argc, char **argv)
         simple_init(100, 100, DISPLAY_SIZE, DISPLAY_SIZE);
 #endif
 
-        struct timeval t1;
         gettimeofday(&t1, NULL);
     }
     MPI_Barrier(MPI_COMM_WORLD);
@@ -558,11 +557,11 @@ int main(int argc, char **argv)
 
 
     MPI_Finalize();
+
     if (comm_rank==0) {
-        struct timeval t2;
         gettimeofday(&t2, NULL);
 
-        //double duration = (t2.tv_sec - t1.tv_sec) + ((t2.tv_usec - t1.tv_usec) / 1e6);
+        double duration = (t2.tv_sec - t1.tv_sec) + ((t2.tv_usec - t1.tv_usec) / 1e6);
 
 #ifdef DUMP_RESULT
         FILE *f_out = fopen("particles.log", "w");
@@ -575,7 +574,7 @@ int main(int argc, char **argv)
         printf("nparticles: %d\n", nparticles);
         printf("T_FINAL: %f\n", T_FINAL);
         printf("-----------------------------\n");
-        //printf("Simulation took %lf s to complete\n", duration);
+        printf("Simulation took %lf s to complete\n", duration);
 
 #ifdef DISPLAY
         node_t *n = root;
