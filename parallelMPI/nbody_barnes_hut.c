@@ -186,15 +186,12 @@ void compute_force_on_particle(node_t *n, particle_t *p)
 
 void compute_force_in_node(node_t *n)
 {
-    printf("[%d/%d] in compute_force_in_node pass\n",comm_rank,comm_size);
   if (!n) {
-      printf("[%d/%d] in compute_force_in_node case : !n\n", comm_rank, comm_size);
       return;
   }
 
   if (n->particle)
   {
-      printf("[%d/%d] in compute_force_in_node case : n->particle\n",comm_rank,comm_size);
     particle_t *p = n->particle;
     p->x_force = 0;
     p->y_force = 0;
@@ -202,7 +199,6 @@ void compute_force_in_node(node_t *n)
   }
   if (n->children)
   {
-      printf("[%d/%d] in compute_force_in_node case : n->children\n",comm_rank,comm_size);
     int i;
     for (i = 0; i < 4; i++)
     {
@@ -353,27 +349,22 @@ void insertNewParticule(node_t *new_root){
 void all_move_particles(double step)
 {
   // On pourrait faire passer que x_force et y force dans cette partie
-    MPI_Barrier(MPI_COMM_WORLD);
-    printf("[%d/%d] root.nparticles =%d\n",comm_rank,comm_size,root->n_particles);
   compute_force_in_node(root);
-    printf("[%d/%d] compute_force_in_node pass\n",comm_rank,comm_size);
-    MPI_Barrier(MPI_COMM_WORLD);
 
     node_t *new_root = alloc_node();
     init_node(new_root, NULL,root->x_min, root->x_max, root->y_min, root->y_max);
-    printf("[%d/%d] init_new_root pass\n",comm_rank,comm_size);
-    MPI_Barrier(MPI_COMM_WORLD);
+
     /* then move all particles and return statistics */
 
     move_particles_in_node(root, step, new_root);
-    printf("[%d/%d] move_particule_in_node pass\n",comm_rank,comm_size);
-    MPI_Barrier(MPI_COMM_WORLD);
+//    printf("[%d/%d] move_particule_in_node pass\n",comm_rank,comm_size);
+//    MPI_Barrier(MPI_COMM_WORLD);
     //S'envoyer les particules non intégrées + inserer dans les noeuds
     //S'envoyer les tailles des buffers indexPToShare
     recvRecvSize();
-    printf("[%d/%d] recvRecvSize pass\n",comm_rank,comm_size);
+   // printf("[%d/%d] recvRecvSize pass\n",comm_rank,comm_size);
     recvRecvBuffer();
-    printf("[%d/%d] recvRecvBuffer pass\n",comm_rank,comm_size);
+    //printf("[%d/%d] recvRecvBuffer pass\n",comm_rank,comm_size);
     insertNewParticule(new_root);
     //dechargerRecvBuffer() //use tableau[3] de recvBuffer
     //insertSharedParticules()
