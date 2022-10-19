@@ -348,7 +348,10 @@ void insertNewParticule(node_t *new_root){
 */
 void all_move_particles(double step)
 {
-  // On pourrait faire passer que x_force et y force dans cette partie
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    // On pourrait faire passer que x_force et y force dans cette partie
   compute_force_in_node(root);
 
   printf("[%d/%d] compute_force_in_node pass\n",comm_rank,comm_size);
