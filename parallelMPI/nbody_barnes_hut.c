@@ -347,8 +347,8 @@ void insertNewParticule(node_t *new_root){
                 p->x_force=recvBuffer[i][n_caracteristic_shared*j+4];
                 p->y_force=recvBuffer[i][n_caracteristic_shared*j+5];
                 p->mass=recvBuffer[i][n_caracteristic_shared*j+6];
-                printf("[%d/%d] new_root->x_max = %f new_root->x_in = %f\n",comm_rank,comm_size,new_root->x_max,new_root->x_min);
-                insert_particle(p,new_root);
+                printf("[%d/%d] new_root->x_max = %f new_root->x_min = %f\n",comm_rank,comm_size,new_root->x_max,new_root->x_min);
+                insert_particle(p, new_root);
                 printf("[%d/%d] sender = %d, current_p = %d, p->x_pos = %f\n",comm_rank,comm_size,i,j,p->x_pos);
 
             }
