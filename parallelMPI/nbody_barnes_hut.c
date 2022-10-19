@@ -186,11 +186,15 @@ void compute_force_on_particle(node_t *n, particle_t *p)
 
 void compute_force_in_node(node_t *n)
 {
-  if (!n)
-    return;
+    printf("[%d/%d] in compute_force_in_node pass\n",comm_rank,comm_size);
+  if (!n) {
+      printf("[%d/%d] in compute_force_in_node case : !n\n", comm_rank, comm_size);
+      return;
+  }
 
   if (n->particle)
   {
+      printf("[%d/%d] in compute_force_in_node case : n->particle\n",comm_rank,comm_size);
     particle_t *p = n->particle;
     p->x_force = 0;
     p->y_force = 0;
@@ -198,6 +202,7 @@ void compute_force_in_node(node_t *n)
   }
   if (n->children)
   {
+      printf("[%d/%d] in compute_force_in_node case : n->children\n",comm_rank,comm_size);
     int i;
     for (i = 0; i < 4; i++)
     {
@@ -348,6 +353,7 @@ void insertNewParticule(node_t *new_root){
 void all_move_particles(double step)
 {
   // On pourrait faire passer que x_force et y force dans cette partie
+    MPI_Barrier(MPI_COMM_WORLD);
   compute_force_in_node(&root);
     printf("[%d/%d] compute_force_in_node pass\n",comm_rank,comm_size);
     MPI_Barrier(MPI_COMM_WORLD);
@@ -485,6 +491,7 @@ int main(int argc, char **argv)
 
   insert_all_particles(nparticles, particles, root);
   *root=root->children[comm_rank];
+
   printf("[%d/%d] x_max %f x_min %f y_max %f y_min %f\n",comm_rank,comm_size,root->x_max,root->x_min,root->y_max,root->y_min);
 
   struct timeval t1, t2;
