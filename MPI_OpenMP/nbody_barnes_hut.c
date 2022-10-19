@@ -1,7 +1,7 @@
-*
+/*
 ** nbody_barnes_hut.c - nbody simulation that implements the Barnes-Hut algorithm (O(nlog(n)))
-**
-**/
+*
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
