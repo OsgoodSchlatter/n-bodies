@@ -377,7 +377,7 @@ void run_simulation()
   {
     /* Update time. */
     //      MPI_Barrier(MPI_COMM_WORLD);
-    printf("[%d/%d] t = %d\n",comm_rank,comm_size,t);
+    printf("[%d/%d] t = %f\n",comm_rank,comm_size,t);
     for (int i=0;i<4;i++){
         indexPToShare[i]=0;
     }
