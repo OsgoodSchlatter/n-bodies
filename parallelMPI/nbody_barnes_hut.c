@@ -349,20 +349,25 @@ void all_move_particles(double step)
 {
   // On pourrait faire passer que x_force et y force dans cette partie
   compute_force_in_node(&root->children[comm_rank]);
+    printf("[%d/%d] compute_force_in_node pass\n",comm_rank,comm_size);
 
     node_t *new_root = alloc_node();
     init_node(new_root, NULL,root->x_min, root->x_max, root->y_min, root->y_max);
-
+    printf("[%d/%d] init_new_root pass\n",comm_rank,comm_size);
     /* then move all particles and return statistics */
 
     move_particles_in_node(root, step, new_root);
+    printf("[%d/%d] move_particule_in_node pass\n",comm_rank,comm_size);
     //S'envoyer les particules non intégrées + inserer dans les noeuds
     //S'envoyer les tailles des buffers indexPToShare
     recvRecvSize();
+    printf("[%d/%d] recvRecvSize pass\n",comm_rank,comm_size);
     recvRecvBuffer();
+    printf("[%d/%d] recvRecvBuffer pass\n",comm_rank,comm_size);
     insertNewParticule(new_root);
     //dechargerRecvBuffer() //use tableau[3] de recvBuffer
     //insertSharedParticules()
+
 
     free_node(root);
     root = new_root;
@@ -384,7 +389,7 @@ void run_simulation()
     t += dt;
     /* Move particles with the current and compute rms velocity. */
     all_move_particles(dt);
-
+    printf("[%d/%d] all_move_particule pass\n",comm_rank,comm_size);
     //Gérer max_acc max_speed
     //MPI_Bcast(&max_acc, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     //MPI_Bcast(&max_speed, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
