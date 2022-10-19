@@ -354,6 +354,7 @@ void all_move_particles(double step)
 {
   // On pourrait faire passer que x_force et y force dans cette partie
     MPI_Barrier(MPI_COMM_WORLD);
+    printf("%d\n",root->n_particles);
   compute_force_in_node(&root);
     printf("[%d/%d] compute_force_in_node pass\n",comm_rank,comm_size);
     MPI_Barrier(MPI_COMM_WORLD);
