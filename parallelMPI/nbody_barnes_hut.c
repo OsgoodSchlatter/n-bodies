@@ -304,6 +304,7 @@ void recvRecvBuffer(){
 
     for(int i = 0; i < 4; i++)
     {
+        free(recvBuffer[i]);
         recvBuffer[i] = malloc(nparticles*sizeof(double)*carac_to_share);
     }
 
