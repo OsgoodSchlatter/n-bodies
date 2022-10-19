@@ -65,6 +65,8 @@ void init()
     {
         pToShare[i] = malloc(nparticles*sizeof(double)*carac_to_share);
     }
+    recvBuffer = malloc(sizeof(double)*4);
+
 
 #ifdef DISPLAY
     Display *theDisplay; /* These three variables are required to open the */
@@ -300,6 +302,11 @@ void recvRecvSize(){
 }
 void recvRecvBuffer(){
 
+    for(int i = 0; i < 4; i++)
+    {
+        recvBuffer[i] = malloc(nparticles*sizeof(double)*carac_to_share);
+    }
+
     MPI_Request request2;
     for (int i=0;i<4;i++){
         if (comm_rank!=i){
@@ -327,6 +334,7 @@ void insertNewParticule(node_t *new_root){
         printf("[%d/%d] indexBuffer[%d] = %d\n",comm_rank,comm_size,i,indexBuffer[i]);
         if (comm_rank!=i){
             for (int j=0;j<indexBuffer[i];i++){
+                //printf("[%d/%d] j = %d\n",comm_rank,comm_size,j);
                 p->x_pos=recvBuffer[i][n_caracteristic_shared*j+0];
                 p->y_pos=recvBuffer[i][n_caracteristic_shared*j+1];
                 p->x_vel=recvBuffer[i][n_caracteristic_shared*j+2];
