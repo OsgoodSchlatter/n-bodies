@@ -350,14 +350,17 @@ void all_move_particles(double step)
   // On pourrait faire passer que x_force et y force dans cette partie
   compute_force_in_node(&root->children[comm_rank]);
     printf("[%d/%d] compute_force_in_node pass\n",comm_rank,comm_size);
+    MPI_Barrier(MPI_COMM_WORLD);
 
     node_t *new_root = alloc_node();
     init_node(new_root, NULL,root->x_min, root->x_max, root->y_min, root->y_max);
     printf("[%d/%d] init_new_root pass\n",comm_rank,comm_size);
+    MPI_Barrier(MPI_COMM_WORLD);
     /* then move all particles and return statistics */
 
     move_particles_in_node(root, step, new_root);
     printf("[%d/%d] move_particule_in_node pass\n",comm_rank,comm_size);
+    MPI_Barrier(MPI_COMM_WORLD);
     //S'envoyer les particules non intégrées + inserer dans les noeuds
     //S'envoyer les tailles des buffers indexPToShare
     recvRecvSize();
