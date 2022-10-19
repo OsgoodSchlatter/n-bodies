@@ -319,6 +319,7 @@ void recvRecvBuffer(){
 }
 
 void insertNewParticule(node_t *new_root){
+    printf("[%d/%d] insertNewParticule IN\n",comm_rank,comm_size);
     particle_t *p;
     p = malloc(sizeof(particle_t));
     p->node=NULL;
@@ -334,6 +335,8 @@ void insertNewParticule(node_t *new_root){
                 p->mass=recvBuffer[i][n_caracteristic_shared*j+6];
 
                 insert_particle(p,new_root);
+                printf("[%d/%d] sender = %d, current_p = %d, p->x_pos = %f\n",comm_rank,comm_size,i,j,p->x_pos);
+
             }
         }
     }
