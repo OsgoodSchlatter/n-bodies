@@ -50,6 +50,8 @@ int nParticulePerProcess;
 int n_caracteristic_shared;
 double** pToShare;
 int indexPToShare[4];
+double** recvBuffer;
+int indexBuffer[4];
 int carac_to_share=7; //x_pos, y_pos;		/* position of the particle */ x_vel, y_vel;		/* velocity of the particle */ x_force, y_force;	/* gravitational forces that apply against this particle */ mass;
 
 void init()
@@ -277,6 +279,65 @@ void move_particles_in_node(node_t *n, double step, node_t *new_root)
   }
 }
 
+void recvRecvSize(){
+    MPI_Request request1;
+    for (int i=0;i<4;i++){
+        if (comm_rank!=i){
+            //MPI_Send() comm_rank -> i
+            MPI_Isend(&indexPToShare[i], 1, MPI_INT, i, 0, MPI_COMM_WORLD,&request1);
+            //A essayer
+            //MPI_Irecv(&indexBuffer[i], 1 , MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE,&request1);
+        }
+    }
+    for (int i=0;i<4;i++){
+        if (comm_rank!=i){
+            //MPI_Irecv() i -> comm_rank
+            MPI_Recv(&indexBuffer[i], 1 , MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+    }
+    MPI_Wait(&request1, MPI_STATUS_IGNORE);
+}
+void recvRecvBuffer(){
+
+    MPI_Request request2;
+    for (int i=0;i<4;i++){
+        if (comm_rank!=i){
+            //MPI_Send() comm_rank -> i
+            MPI_Isend(&pToShare[i], indexBuffer[i]*n_caracteristic_shared, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,&request2);
+            //A essayer
+            //MPI_Irecv(&recvBuffer[i], indexBuffer[i]*n_caracteristic_shared, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE,&request2);
+        }
+    }
+    for (int i=0;i<4;i++){
+        if (comm_rank!=i){
+            //MPI_Irecv() i -> comm_rank
+            MPI_Recv(&recvBuffer[i], indexBuffer[i]*n_caracteristic_shared, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+        }
+    }
+    MPI_Wait(&request2, MPI_STATUS_IGNORE);
+}
+
+void insertNewParticule(node_t *new_root){
+    particle_t *p;
+    p = malloc(sizeof(particle_t));
+    p->node=NULL;
+    for (int i = 0; i<4 ;i++){
+        if (comm_rank!=i){
+            for (int j=0;j<indexBuffer[i];i++){
+                p->x_pos=recvBuffer[i][n_caracteristic_shared*j+0];
+                p->y_pos=recvBuffer[i][n_caracteristic_shared*j+1];
+                p->x_vel=recvBuffer[i][n_caracteristic_shared*j+2];
+                p->y_vel=recvBuffer[i][n_caracteristic_shared*j+3];
+                p->x_force=recvBuffer[i][n_caracteristic_shared*j+4];
+                p->y_force=recvBuffer[i][n_caracteristic_shared*j+5];
+                p->mass=recvBuffer[i][n_caracteristic_shared*j+6];
+
+                insert_particle(p,new_root);
+            }
+        }
+    }
+}
+
 
 /*
   Move particles one time step.
@@ -293,23 +354,14 @@ void all_move_particles(double step)
     init_node(new_root, NULL,root->x_min, root->x_max, root->y_min, root->y_max);
 
     /* then move all particles and return statistics */
+    printf("[%d/%d] l357\n",comm_rank,comm_size);
     move_particles_in_node(root, step, new_root);
-
+    printf("[%d/%d] l359\n",comm_rank,comm_size);
     //S'envoyer les particules non intégrées + inserer dans les noeuds
-    if (comm_rank==0){
-        printf("%f\n",pToShare[0]->x_pos);
-    }
-    MPI_Request request;
-    for (int i=0;i<4;i++){
-        if (comm_rank!=i){
-            //MPI_Send() comm_rank -> i
-            MPI_Isend(pToShare[i], indexPToShare[i]*n_caracteristic_shared, MPI_INT, i, 0, MPI_COMM_WORLD,&request);
-            //MPI_Irecv() i -> comm_rank -> PROBLEME COMBIEN ON EN ENVOIE ??
-            //MPI_Irecv(&recvBuffer, indexPToShare[]*n_caracteristic_shared , MPI_INT, SENDER, 0, MPI_COMM_WORLD, &request);
-        }
-    }
-    MPI_Wait(&request, MPI_STATUS_IGNORE);
-    //MPI_WAIT ALL ?
+    //S'envoyer les tailles des buffers indexPToShare
+    recvRecvSize();
+    recvRecvBuffer();
+    insertNewParticule(new_root);
     //dechargerRecvBuffer() //use tableau[3] de recvBuffer
     //insertSharedParticules()
 
@@ -425,7 +477,7 @@ int main(int argc, char **argv)
 
   insert_all_particles(nparticles, particles, root);
   *root=root->children[comm_rank];
-    printf("[%d/%d] x_max %f x_min %f y_max %f y_min %f\n",comm_rank,comm_size,root->x_max,root->x_min,root->y_max,root->y_min);
+    //printf("[%d/%d] x_max %f x_min %f y_max %f y_min %f\n",comm_rank,comm_size,root->x_max,root->x_min,root->y_max,root->y_min);
 
   struct timeval t1, t2;
   if (comm_rank == 0)
