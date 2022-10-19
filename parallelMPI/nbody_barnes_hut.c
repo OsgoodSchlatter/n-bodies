@@ -47,12 +47,10 @@ double sum_speed_sq_local = 0;
 
 
 int nParticulePerProcess;
-// printf("%d : %d",comm_rank,nParticulePerProcess);
-// ALLGATHERV particles
 int n_caracteristic_shared;
-particle_t** pToShare;
+double** pToShare;
 int indexPToShare[4];
-
+int carac_to_share=7; //x_pos, y_pos;		/* position of the particle */ x_vel, y_vel;		/* velocity of the particle */ x_force, y_force;	/* gravitational forces that apply against this particle */ mass;
 
 void init()
 {
@@ -60,10 +58,10 @@ void init()
     root = malloc(sizeof(node_t));
     init_node(root, NULL, XMIN, XMAX, YMIN, YMAX);
 
-    pToShare = malloc(sizeof(particle_t)*4);
+    pToShare = malloc(sizeof(double)*4);
     for(int i = 0; i < 4; i++)
     {
-        pToShare[i] = malloc(nparticles*sizeof(particle_t));
+        pToShare[i] = malloc(nparticles*sizeof(double)*carac_to_share);
     }
 
 #ifdef DISPLAY
@@ -241,7 +239,15 @@ void move_particle(particle_t *p, double step, node_t *new_root)
   }
   else
   {
-      pToShare[indexNode]=p;
+      pToShare[indexNode][indexPToShare[indexNode]*n_caracteristic_shared+0]=p->x_pos;
+      pToShare[indexNode][indexPToShare[indexNode]*n_caracteristic_shared+1]=p->y_pos;
+      pToShare[indexNode][indexPToShare[indexNode]*n_caracteristic_shared+2]=p->x_vel;
+      pToShare[indexNode][indexPToShare[indexNode]*n_caracteristic_shared+3]=p->y_vel;
+      pToShare[indexNode][indexPToShare[indexNode]*n_caracteristic_shared+4]=p->x_force;
+      pToShare[indexNode][indexPToShare[indexNode]*n_caracteristic_shared+5]=p->y_force;
+      pToShare[indexNode][indexPToShare[indexNode]*n_caracteristic_shared+6]=p->mass;
+
+      indexPToShare[indexNode]+=1;
       indexPToShare[indexNode]+=1;
   }
 }
@@ -293,14 +299,16 @@ void all_move_particles(double step)
     if (comm_rank==0){
         printf("%f\n",pToShare[0]->x_pos);
     }
-
+    MPI_Request request;
     for (int i=0;i<4;i++){
         if (comm_rank!=i){
-            //chargerSendBuffer(); //use 1 sendBuffer
-            //MPI_Isend() comm_rank -> i
-            //MPI_Irecv()
+            //MPI_Send() comm_rank -> i
+            MPI_Isend(pToShare[i], indexPToShare[i]*n_caracteristic_shared, MPI_INT, i, 0, MPI_COMM_WORLD,&request);
+            //MPI_Irecv() i -> comm_rank -> PROBLEME COMBIEN ON EN ENVOIE ??
+            //MPI_Irecv(&recvBuffer, indexPToShare[]*n_caracteristic_shared , MPI_INT, SENDER, 0, MPI_COMM_WORLD, &request);
         }
     }
+    MPI_Wait(&request, MPI_STATUS_IGNORE);
     //MPI_WAIT ALL ?
     //dechargerRecvBuffer() //use tableau[3] de recvBuffer
     //insertSharedParticules()
