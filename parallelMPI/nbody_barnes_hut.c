@@ -338,7 +338,7 @@ void insertNewParticule(node_t *new_root){
     for (int i = 0; i<4 ;i++){
         //printf("[%d/%d] indexBuffer[%d] = %d\n",comm_rank,comm_size,i,indexBuffer[i]);
         if (comm_rank!=i){
-            for (int j=0;j<indexBuffer[i];i++){
+            for (int j=0;j<indexBuffer[i];j++){
                 printf("[%d/%d] j = %d\n",comm_rank,comm_size,j);
                 p->x_pos=recvBuffer[i][n_caracteristic_shared*j+0];
                 p->y_pos=recvBuffer[i][n_caracteristic_shared*j+1];
