@@ -354,9 +354,8 @@ void all_move_particles(double step)
     init_node(new_root, NULL,root->x_min, root->x_max, root->y_min, root->y_max);
 
     /* then move all particles and return statistics */
-    printf("[%d/%d] l357\n",comm_rank,comm_size);
+
     move_particles_in_node(root, step, new_root);
-    printf("[%d/%d] l359\n",comm_rank,comm_size);
     //S'envoyer les particules non intégrées + inserer dans les noeuds
     //S'envoyer les tailles des buffers indexPToShare
     recvRecvSize();
@@ -378,6 +377,7 @@ void run_simulation()
   {
     /* Update time. */
     //      MPI_Barrier(MPI_COMM_WORLD);
+    printf("[%d/%d] t = %d\n",comm_rank,comm_size,t);
     for (int i=0;i<4;i++){
         indexPToShare[i]=0;
     }
@@ -477,7 +477,7 @@ int main(int argc, char **argv)
 
   insert_all_particles(nparticles, particles, root);
   *root=root->children[comm_rank];
-    //printf("[%d/%d] x_max %f x_min %f y_max %f y_min %f\n",comm_rank,comm_size,root->x_max,root->x_min,root->y_max,root->y_min);
+  printf("[%d/%d] x_max %f x_min %f y_max %f y_min %f\n",comm_rank,comm_size,root->x_max,root->x_min,root->y_max,root->y_min);
 
   struct timeval t1, t2;
   if (comm_rank == 0)
