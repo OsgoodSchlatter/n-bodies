@@ -324,6 +324,7 @@ void insertNewParticule(node_t *new_root){
     p = malloc(sizeof(particle_t));
     p->node=NULL;
     for (int i = 0; i<4 ;i++){
+        printf("[%d/%d] indexBuffer[%d] = %d\n",comm_rank,comm_size,i,indexBuffer[i]);
         if (comm_rank!=i){
             for (int j=0;j<indexBuffer[i];i++){
                 p->x_pos=recvBuffer[i][n_caracteristic_shared*j+0];
