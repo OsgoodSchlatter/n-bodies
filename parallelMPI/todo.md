@@ -1,0 +1,1 @@
+- regardez quelles données sont calculées puis envoyées
