@@ -92,8 +92,8 @@ void init_node(node_t* n, node_t* parent, double x_min, double x_max, double y_m
   n->x_center = 0;
   n->y_center = 0;
 
-  assert(x_min != x_max);
-  assert(y_min != y_max);
+  //assert(x_min != x_max);
+  //assert(y_min != y_max);
 }
 
 
