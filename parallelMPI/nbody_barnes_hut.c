@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <mpi.h>
+#include <stdbool.h>
 
 #ifdef DISPLAY
 #include <X11/Xlib.h>
@@ -20,6 +21,7 @@
 #include "ui.h"
 #include "nbody.h"
 #include "nbody_tools.h"
+
 
 FILE *f_out = NULL;
 
@@ -43,27 +45,60 @@ double max_acc_local = 0;
 double max_speed_local = 0;
 double sum_speed_sq_local = 0;
 
+
 int nParticulePerProcess;
 // printf("%d : %d",comm_rank,nParticulePerProcess);
 // ALLGATHERV particles
 int n_caracteristic_shared;
-double *my_values;
-// Gestion des sources et de la destination des valeurs reçus
-double *buffer_recv;
-int *counts_recv;
-int *displacements_recv;
-int actual_n_particule = 0;
+particle_t** pToShare;
+int indexPToShare[4];
+
 
 void init()
 {
-  init_alloc(8 * nparticles);
-  root = malloc(sizeof(node_t));
-  init_node(root, NULL, XMIN, XMAX, YMIN, YMAX);
+    init_alloc(8 * nparticles);
+    root = malloc(sizeof(node_t));
+    init_node(root, NULL, XMIN, XMAX, YMIN, YMAX);
+
+    pToShare = malloc(sizeof(particle_t)*4);
+    for(int i = 0; i < 4; i++)
+    {
+        pToShare[i] = malloc(nparticles*sizeof(particle_t));
+    }
+
 #ifdef DISPLAY
-  Display *theDisplay; /* These three variables are required to open the */
+    Display *theDisplay; /* These three variables are required to open the */
   GC theGC;            /* particle plotting window.  They are externally */
   Window theMain;      /* declared in ui.h but are also required here.   */
 #endif
+}
+
+int isInWhichNode(particle_t *p){
+    if (p->x_pos < XMIN ||
+        p->x_pos > XMAX ||
+        p->y_pos < YMIN ||
+        p->y_pos > YMAX)
+    {
+        //pas dans la grille
+        return -1;
+    }
+    else
+    {
+        if ( p->x_pos > 0){
+            if (p->y_pos > 0){
+                return 3;
+            } else{
+                return 1;
+            }
+        } else{
+            if (p->y_pos > 0){
+                return 2;
+            } else{
+                return 0;
+            }
+        }
+
+    }
 }
 
 /* compute the force that a particle with position (x_pos, y_pos) and mass 'mass'
@@ -196,16 +231,18 @@ void move_particle(particle_t *p, double step, node_t *new_root)
   // ENVOYER OU PAS AU BON PROCESS MPI
   // CE PROCESS L'insrt dans son root
   p->node = NULL;
-  if (p->x_pos < new_root->x_min ||
-      p->x_pos > new_root->x_max ||
-      p->y_pos < new_root->y_min ||
-      p->y_pos > new_root->y_max)
+  int indexNode = isInWhichNode(p);
+  if (indexNode<0)
   {
     nparticles--;
   }
+  else if (indexNode == comm_rank){
+      insert_particle(p, new_root);
+  }
   else
   {
-    insert_particle(p, new_root);
+      pToShare[indexNode]=p;
+      indexPToShare[indexNode]+=1;
   }
 }
 
@@ -234,50 +271,6 @@ void move_particles_in_node(node_t *n, double step, node_t *new_root)
   }
 }
 
-/* compute the new position of the particles in a node */
-void remplirMyValues(node_t *n)
-{
-  if (!n)
-    return;
-
-  if (n->particle)
-  {
-
-    my_values[actual_n_particule * n_caracteristic_shared] = n->particle->x_force;
-    my_values[actual_n_particule * n_caracteristic_shared + 1] = n->particle->y_force;
-    actual_n_particule += 1;
-  }
-  if (n->children)
-  {
-    int i;
-    for (i = 0; i < 4; i++)
-    {
-      remplirMyValues(&n->children[i]);
-    }
-  }
-}
-
-void recvSendBuffer(node_t *n)
-{
-  if (!n)
-    return;
-
-  if (n->particle)
-  {
-
-    n->particle->x_force = buffer_recv[n_caracteristic_shared * actual_n_particule];
-    n->particle->y_force = buffer_recv[n_caracteristic_shared * actual_n_particule + 1];
-    actual_n_particule += 1;
-  }
-  if (n->children)
-  {
-    int i;
-    for (i = 0; i < 4; i++)
-    {
-      recvSendBuffer(&n->children[i]);
-    }
-  }
-}
 
 /*
   Move particles one time step.
@@ -290,118 +283,56 @@ void all_move_particles(double step)
   // On pourrait faire passer que x_force et y force dans cette partie
   compute_force_in_node(&root->children[comm_rank]);
 
-  // changer les tableaux counts_recv  displacements_recv
-  nParticulePerProcess = root->children[comm_rank].n_particles;
-  free(my_values);
-  n_caracteristic_shared = 2;
-  my_values = malloc(nParticulePerProcess * n_caracteristic_shared * sizeof(double));
-  for (int i = 0; i < comm_size; i++)
-  {
-    // RECV n particles informations from
-    counts_recv[i] = root->children[i].n_particles * n_caracteristic_shared;
-    if (i == 0)
-    {
-      displacements_recv[i] = 0;
-    }
-    else
-    {
-      displacements_recv[i] = displacements_recv[i - 1] + counts_recv[i - 1];
-    }
-  }
-  actual_n_particule = 0;
-  remplirMyValues(&root->children[comm_rank]);
-
-  MPI_Allgatherv(my_values,
-                 nParticulePerProcess * n_caracteristic_shared,
-                 MPI_DOUBLE,
-                 buffer_recv,
-                 counts_recv,
-                 displacements_recv,
-                 MPI_DOUBLE,
-                 MPI_COMM_WORLD);
-  // Deplacer donné de buffer send à particles
-  actual_n_particule = 0;
-  for (int i = 0; i < 4; i++)
-  {
-    recvSendBuffer(&root->children[i]);
-  }
-  // MPI_Barrier(MPI_COMM_WORLD);
-  // CHACUN A particles à jour
-  MPI_Barrier(MPI_COMM_WORLD);
-
-  if (comm_rank == 0)
-  {
     node_t *new_root = alloc_node();
-    init_node(new_root, NULL, XMIN, XMAX, YMIN, YMAX);
+    init_node(new_root, NULL,root->x_min, root->x_max, root->y_min, root->y_max);
 
     /* then move all particles and return statistics */
     move_particles_in_node(root, step, new_root);
 
+    //S'envoyer les particules non intégrées + inserer dans les noeuds
+    if (comm_rank==0){
+        printf("%f\n",pToShare[0]->x_pos);
+    }
+
+    for (int i=0;i<4;i++){
+        if (comm_rank!=i){
+            //chargerSendBuffer(); //use 1 sendBuffer
+            //MPI_Isend() comm_rank -> i
+            //MPI_Irecv()
+        }
+    }
+    //MPI_WAIT ALL ?
+    //dechargerRecvBuffer() //use tableau[3] de recvBuffer
+    //insertSharedParticules()
+
     free_node(root);
     root = new_root;
-  }
-  // Envoyer particles a todos
-  double *bcast_buff = malloc(sizeof(double) * 4 * nparticles); // x_pos,y_pos,x_vel,y_vel,mass
-  if (comm_rank == 0)
-  {
-    for (int i = 0; i < nparticles; i++)
-    {
-      bcast_buff[i * 4 + 0] = particles[i].x_pos;
-      bcast_buff[i * 4 + 1] = particles[i].y_pos;
-      bcast_buff[i * 4 + 2] = particles[i].x_vel;
-      bcast_buff[i * 4 + 3] = particles[i].y_vel;
-      // bcast_buff[i*5+4]=particles[i].mass;
-    }
-  }
-  MPI_Bcast(bcast_buff, 4 * nparticles, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-  if (comm_rank != 0)
-  {
-    for (int i = 0; i < nparticles; i++)
-    {
-      particles[i].x_pos = bcast_buff[i * 4 + 0];
-      particles[i].y_pos = bcast_buff[i * 4 + 1];
-      particles[i].x_vel = bcast_buff[i * 4 + 2];
-      particles[i].y_vel = bcast_buff[i * 4 + 3];
-      // particles[i].mass=bcast_buff[i*5+4];
-    }
-  }
-  MPI_Barrier(MPI_COMM_WORLD);
-  // ENVOYER ROOT POUR CHACUN
-  node_t *new_root2 = alloc_node();
-  init_node(new_root2, NULL, XMIN, XMAX, YMIN, YMAX);
-  int i;
-  for (i = 0; i < nparticles; i++)
-  {
-    insert_particle(&particles[i], new_root2);
-  }
-  free_node(root);
-  root = new_root2;
+
 }
 
 void run_simulation()
 {
   double t = 0.0, dt = 0.01;
-  n_caracteristic_shared = 6;
-  counts_recv = malloc(comm_size * sizeof(int));
-  displacements_recv = malloc(comm_size * sizeof(int));
-  // Gestion des sources et de la destination des valeurs reçus
-  buffer_recv = malloc(nparticles * n_caracteristic_shared * sizeof(double));
 
   while (t < T_FINAL && nparticles > 0)
   {
     /* Update time. */
     //      MPI_Barrier(MPI_COMM_WORLD);
+    for (int i=0;i<4;i++){
+        indexPToShare[i]=0;
+    }
     t += dt;
     /* Move particles with the current and compute rms velocity. */
     all_move_particles(dt);
 
-    MPI_Bcast(&max_acc, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&max_speed, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    //Gérer max_acc max_speed
+    //MPI_Bcast(&max_acc, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    //MPI_Bcast(&max_speed, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     /* Adjust dt based on maximum speed and acceleration--this
        simple rule tries to insure that no velocity will change
        by more than 10% */
-    dt = 0.1 * max_speed / max_acc;
+    dt = 0.1 ;//* max_speed / max_acc;
 
     /* Plot the movement of the particle */
     if (comm_rank == 0)
@@ -485,6 +416,9 @@ int main(int argc, char **argv)
   //    MPI_Barrier(MPI_COMM_WORLD);
 
   insert_all_particles(nparticles, particles, root);
+  *root=root->children[comm_rank];
+    printf("[%d/%d] x_max %f x_min %f y_max %f y_min %f\n",comm_rank,comm_size,root->x_max,root->x_min,root->y_max,root->y_min);
+
   struct timeval t1, t2;
   if (comm_rank == 0)
   {
