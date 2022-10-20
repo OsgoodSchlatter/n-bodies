@@ -96,7 +96,7 @@ void move_particle(particle_t *p, double step)
 void all_move_particles(double step,int n_threads)
 {
 
-#pragma omp parallel num_threads(n_threads)
+#pragma omp parallel
     {
         /* First calculate force for particles. */
         int i;
@@ -180,15 +180,9 @@ int main(int argc, char **argv)
   {
     nparticles = atoi(argv[1]);
   }
-  if (argc >= 3)
+  if (argc == 3)
   {
     T_FINAL = atof(argv[2]);
-  }
-  if (argc >=4 ){
-      n_threads = atof(argv[3]);
-  }
-  if (argc ==5 ){
-      RESULTAT_OPENMP = atof(argv[4]);
   }
 
   init();
