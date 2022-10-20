@@ -26,7 +26,8 @@ mkdir $dirname/log
 echo \#n_process n_thread p t_seq t_parallel > ./$dirname/res_$date.data
 
 #echo $n_process $MAX_THREAD
-../sequential/$algo $N_PARTICULE $T_FINAL > ./$dirname/log/log_seq.log >&1
+#../sequential/$algo $N_PARTICULE $T_FINAL > ./$dirname/log/log_seq.log >&1
+OMP_NUM_THREADS=1 mpirun -n 1 ../MPI_OpenMP/$algo $N_PARTICULE $T_FINAL > ./$dirname/log/log_$n_process\_$n_thread.log >&1
 
 seq_duration=$(cat ./$dirname/log/log_seq.log | grep "Simulation" | cut -d " " -f 3)
 
@@ -62,7 +63,7 @@ echo set terminal png >> ./$dirname/plot_$date.plot
 echo set ylabel \"speedup\" >> ./$dirname/plot_$date.plot
 echo set xlabel \"number of cores\" >> ./$dirname/plot_$date.plot
 echo set xtics 1 >> ./$dirname/plot_$date.plot
-echo set title \"NBody_Brute_Force Speedup for MPI + OpenMP execution\" >> ./$dirname/plot_$date.plot
+echo set title \"$algo Speedup with MPI + OpenMP execution\" >> ./$dirname/plot_$date.plot
 
 echo set output \"./$dirname/SpeedUp-MPI_OpenMP.png\" >> ./$dirname/plot_$date.plot
 echo "plot x title 'Speedup max' with lines," \'./$dirname/res_$date.data\' "using 3:(\$4/\$5) title 'SpeedUp' with linespoints, 1 title 'Efficacité max' with lines," \'./$dirname/res_$date.data\' "using 3:(\$4/\$5/(\$3)) title 'Efficacité' with linespoints;" >> ./$dirname/plot_$date.plot
