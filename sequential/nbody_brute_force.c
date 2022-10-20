@@ -140,7 +140,7 @@ void run_simulation()
   double t = 0.0, dt = 0.01;
   while (t < T_FINAL && nparticles > 0)
   {
-      printf("t = %f\n",t);
+      //printf("t = %f\n",t);
     /* Update time. */
     t += dt;
     /* Move particles with the current and compute rms velocity. */
