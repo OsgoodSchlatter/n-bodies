@@ -24,7 +24,7 @@ mkdir $dirname/log
 echo \#n_process t_seq t_parallel > ./$dirname/res_$date.data
 
 #echo $n_process $MAX_THREAD
-mpirun -n 1 ../parallelMPI/$algo $N_PARTICULE $T_FINAL > ./$dirname/log/log_$n_process.log >&1
+mpirun -n 1 ../parallelMPI/$algo $N_PARTICULE $T_FINAL > ./$dirname/log/log_seq.log >&1
 
 seq_duration=$(cat ./$dirname/log/log_seq.log | grep "Simulation" | cut -d " " -f 3)
 
@@ -32,7 +32,7 @@ echo  1 $seq_duration $seq_duration >> ./$dirname/res_$date.data
 
 for n_process in $(seq 2 $MAX_PROCESS)
 do
-    mpirun -n $n_process -f $hostsfile ../parallelMPI/$algo $N_PARTICULE $T_FINAL > ./$dirname/log/log_$n_processS.log >&1
+    mpirun -n $n_process -f $hostsfile ../parallelMPI/$algo $N_PARTICULE $T_FINAL > ./$dirname/log/log_$n_process.log >&1
 
     duration=$(cat ./$dirname/log/log_$n_process.log | grep "Simulation" | cut -d " " -f 3)
 

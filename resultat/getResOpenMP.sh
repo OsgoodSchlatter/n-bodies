@@ -23,7 +23,7 @@ mkdir $dirname/log
 echo \#n_thread t_seq t_parallel > ./$dirname/res_$date.data
 
 #echo $n_process $MAX_THREAD
-OMP_NUM_THREADS=1 ../parallelOpenMP/$algo $N_PARTICULE $T_FINAL > ./$dirname/log/log_$n_thread.log >&1
+OMP_NUM_THREADS=1 ../parallelOpenMP/$algo $N_PARTICULE $T_FINAL > ./$dirname/log/log_seq.log >&1
 
 seq_duration=$(cat ./$dirname/log/log_seq.log | grep "Simulation" | cut -d " " -f 3)
 
