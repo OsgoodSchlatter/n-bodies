@@ -24,6 +24,10 @@ seq_duration=0
 mkdir $dirname
 mkdir $dirname/log
 
+#Param init
+echo \#MAX_PROCESS MAX_THREAD N_PARTICULE T_FINAL THREAD_VARIABLE> ./$dirname/param.data
+echo $MAX_PROCESS $MAX_THREAD $N_PARTICULE $T_FINAL $THREAD_VARIABLE> ./$dirname/param.data >&1
+
 echo \#n_process n_thread p t_seq t_parallel > ./$dirname/res_$date.data
 
 #echo $n_process $MAX_THREAD

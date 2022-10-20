@@ -2,9 +2,9 @@
 
 algo=nbody_brute_force
 
-MAX_THREAD=6
+MAX_THREAD=48
 
-N_PARTICULE=1500
+N_PARTICULE=3000
 T_FINAL=1
 
 date=$(date +"%d_%m_%y_%s")
@@ -19,6 +19,10 @@ seq_duration=0
 
 mkdir $dirname
 mkdir $dirname/log
+
+#Param init
+echo \#MAX_THREAD N_PARTICULE T_FINAL > ./$dirname/param.data
+echo $MAX_THREAD $N_PARTICULE $T_FINAL > ./$dirname/param.data >&1
 
 echo \#n_thread t_seq t_parallel > ./$dirname/res_$date.data
 
