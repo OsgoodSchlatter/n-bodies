@@ -36,7 +36,6 @@ do
     duration=$(cat ./$dirname/log/log_$n_thread.log | grep "Simulation" | cut -d " " -f 3)
 
     echo $n_thread $seq_duration $duration >> ./$dirname/res_$date.data
-  fi
 done
 
 #AFFICHAGE PLOT
