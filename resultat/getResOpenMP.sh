@@ -4,8 +4,8 @@ algo=nbody_brute_force
 
 MAX_THREAD=48
 
-N_PARTICULE=3000
-T_FINAL=1
+N_PARTICULE=2000
+T_FINAL=3
 
 date=$(date +"%d_%m_%y_%s")
 dirname=OpenMP_$algo\_$date
@@ -40,6 +40,7 @@ do
     duration=$(cat ./$dirname/log/log_$n_thread.log | grep "Simulation" | cut -d " " -f 3)
 
     echo $n_thread $seq_duration $duration >> ./$dirname/res_$date.data
+    echo $n_thread
 done
 
 #AFFICHAGE PLOT

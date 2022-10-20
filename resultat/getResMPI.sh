@@ -2,10 +2,10 @@
 
 algo=nbody_brute_force
 
-MAX_PROCESS=4
+MAX_PROCESS=6
 
-N_PARTICULE=1500
-T_FINAL=1
+N_PARTICULE=2000
+T_FINAL=3
 
 date=$(date +"%d_%m_%y_%s")
 hostsfile="./hosts"
