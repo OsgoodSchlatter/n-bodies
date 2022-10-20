@@ -104,7 +104,7 @@ void all_move_particles(double step)
     }
   }
 
-    printf("pos_x = %f\n",particles[0].x_pos);
+    //printf("pos_x = %f\n",particles[0].x_pos);
 
   /* then move all particles and return statistics */
   for (i = 0; i < nparticles; i++)
