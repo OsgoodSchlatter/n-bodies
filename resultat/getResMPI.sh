@@ -46,7 +46,7 @@ done
 
 mpirun -n 10 -f $hostsfile ../parallelMPI/$algo $N_PARTICULE $T_FINAL > ./$dirname/log/log_$n_process.log >&1
 duration=$(cat ./$dirname/log/log_$n_process.log | grep "Simulation" | cut -d " " -f 3)
-echo $n_process $seq_duration $duration >> ./$dirname/res_$date.data
+echo $10 $seq_duration $duration >> ./$dirname/res_$date.data
 
 #AFFICHAGE PLOT
 #$cp ./plot.plot ./$date/plot_$date.plot

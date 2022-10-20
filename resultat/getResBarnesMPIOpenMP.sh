@@ -65,7 +65,7 @@ done
 
 OMP_NUM_THREADS=$MAX_THREAD mpirun -n 10 -f $hostsfile ../MPI_OpenMP/$algo $N_PARTICULE $T_FINAL > ./$dirname/log/log_$n_process\_$MAX_THREAD.log >&1
 duration=$(cat ./$dirname/log/log_$n_process\_$MAX_THREAD.log | grep "Simulation" | cut -d " " -f 3)
-echo $n_process $MAX_THREAD $(expr $n_process \* $MAX_THREAD) $seq_duration $duration >> ./$dirname/res_$date.data
+echo $10 $MAX_THREAD $(expr $10 \* $MAX_THREAD) $seq_duration $duration >> ./$dirname/res_$date.data
 
 #AFFICHAGE PLOT
 #$cp ./plot.plot ./$date/plot_$date.plot
