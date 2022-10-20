@@ -1,9 +1,10 @@
 #!/bin/bash
 
-algo=nbody_barnes_hut
+#nbody_brute_force nbody_barnes_hut
+algo=nbody_brute_force
 
-MAX_PROCESS=6
-THREAD_VARIABLE=1
+MAX_PROCESS=2
+THREAD_VARIABLE=0
 MAX_THREAD=2
 
 N_PARTICULE=1500
