@@ -105,10 +105,10 @@ void all_move_particles(double step)
   /*  Séparer les nparticles entre les n_process
   */
   //printf("comm_rank %d : %d <i< %d\n",comm_rank,comm_rank*nparticles/comm_size, (comm_rank+1)*nparticles/comm_size);
-#pragma omp parallel
+/*#pragma omp parallel
     {
         //printf("[%d/%d] thread %d / %d \n",comm_rank,comm_size,omp_get_thread_num(),omp_get_num_threads());
-    #pragma omp for schedule(static)
+    #pragma omp for schedule(static)*/
         for (i = (int) (comm_rank * nparticles / comm_size); i < (int) ((comm_rank + 1) * nparticles / comm_size); i++) {
             //printf("nparticule %d par %d / %d\n",i,comm_rank,comm_size);
             int j;
@@ -122,13 +122,13 @@ void all_move_particles(double step)
         }
 
         /* then move all particles and return statistics  */
-    #pragma omp for schedule(static) reduction(max:max_acc_local) reduction(max : max_speed_local) reduction(+ : sum_speed_sq_local)
+    //#pragma omp for schedule(static) reduction(max:max_acc_local) reduction(max : max_speed_local) reduction(+ : sum_speed_sq_local)
         for (i = (int) (comm_rank * nparticles / comm_size); i < (int) ((comm_rank + 1) * nparticles / comm_size); i++) {
             move_particle(&particles[i], step);
         }
 
         //printf("[%d/%d] thread %d / %d : %f\n",comm_rank,comm_size,omp_get_thread_num(),omp_get_num_threads(),max_speed_local);
-    }
+    //}
 
 }
 

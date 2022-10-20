@@ -3,9 +3,9 @@
 #nbody_brute_force nbody_barnes_hut
 algo=nbody_brute_force
 
-MAX_PROCESS=5
-THREAD_VARIABLE=0
-MAX_THREAD=2
+MAX_PROCESS=6
+THREAD_VARIABLE=1
+MAX_THREAD=1
 
 N_PARTICULE=1500
 T_FINAL=1
@@ -27,6 +27,7 @@ mkdir $dirname/log
 #Param init
 echo \#MAX_PROCESS MAX_THREAD N_PARTICULE T_FINAL THREAD_VARIABLE> ./$dirname/param.data
 echo $MAX_PROCESS $MAX_THREAD $N_PARTICULE $T_FINAL $THREAD_VARIABLE> ./$dirname/param.data >&1
+echo mpi brute force synchrone> ./$dirname/param.data >&1
 
 echo \#n_process n_thread p t_seq t_parallel > ./$dirname/res_$date.data
 
