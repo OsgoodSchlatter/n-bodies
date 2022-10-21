@@ -2,19 +2,15 @@
 ASR project 5001 course
 
 ##Version dispnible
-OpenMP : nbody_brute_force
-MPI : nbody_brute_force nbody_brute_force_async nbody_barnes_hut
-MPI_OpenMP : nbody_brute_force nbody_brute_force_async nbody_barnes_hut
+OpenMP : nbody_brute_force  
+MPI : nbody_brute_force nbody_brute_force_async nbody_barnes_hut  
+MPI_OpenMP : nbody_brute_force nbody_brute_force_async nbody_barnes_hut  
 
-__Encore en travail__ :
-MPI : nbody_barnes_hut_v2
-CUDA : nbody_brute_force
+__Encore en travail__ :  
+MPI : nbody_barnes_hut_v2  
+CUDA : nbody_brute_force  
 
-##Lancement
+##Resources
 
-
-
-##resources
-
-https://github.com/Ligh7bringer/Nbody-parallel/tree/master/src/mpi
-https://www.cs.usask.ca/~spiteri/CMPT851/notes/nBody.pdf
+https://github.com/Ligh7bringer/Nbody-parallel/tree/master/src/mpi  
+https://www.cs.usask.ca/~spiteri/CMPT851/notes/nBody.pdf  
