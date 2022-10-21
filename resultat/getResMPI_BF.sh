@@ -4,8 +4,8 @@ algo=nbody_brute_force
 
 MAX_PROCESS=6
 
-N_PARTICULE=2000
-T_FINAL=3
+N_PARTICULE=1500
+T_FINAL=1
 
 date=$(date +"%d_%m_%y_%s")
 hostsfile="./hosts"
@@ -40,15 +40,17 @@ echo  1 $seq_duration $seq_duration >> ./$dirname/res_$date.data
 for n_process in $(seq 2 $MAX_PROCESS)
 do
     mpirun -n $n_process -f $hostsfile ../MPI/$algo $N_PARTICULE $T_FINAL > ./$dirname/log/log_$n_process.log >&1
-
     duration=$(cat ./$dirname/log/log_$n_process.log | grep "Simulation" | cut -d " " -f 3)
-
     echo $n_process $seq_duration $duration >> ./$dirname/res_$date.data
+
+    echo $n_process
 done
 
 mpirun -n 10 -f $hostsfile ../MPI/$algo $N_PARTICULE $T_FINAL > ./$dirname/log/log_$n_process.log >&1
 duration=$(cat ./$dirname/log/log_$n_process.log | grep "Simulation" | cut -d " " -f 3)
 echo 10 $seq_duration $duration >> ./$dirname/res_$date.data
+
+echo 10
 
 #AFFICHAGE PLOT
 #$cp ./plot.plot ./$date/plot_$date.plot

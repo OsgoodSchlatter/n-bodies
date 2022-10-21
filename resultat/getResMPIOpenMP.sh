@@ -3,12 +3,12 @@
 #nbody_brute_force nbody_barnes_hut
 algo=nbody_brute_force
 
-MAX_PROCESS=6
-THREAD_VARIABLE=1
+MAX_PROCESS=4
+THREAD_VARIABLE=0
 MAX_THREAD=4
 
 N_PARTICULE=1500
-T_FINAL=6
+T_FINAL=1
 
 date=$(date +"%d_%m_%y_%s")
 hostsfile="./hosts"
@@ -54,6 +54,8 @@ do
       duration=$(cat ./$dirname/log/log_$n_process\_$n_thread.log | grep "Simulation" | cut -d " " -f 3)
 
       echo $n_process $n_thread $(expr $n_process \* $n_thread) $seq_duration $duration >> ./$dirname/res_$date.data
+
+      echo $n_process $n_thread
 
     done
   else

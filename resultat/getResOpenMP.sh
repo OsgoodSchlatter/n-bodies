@@ -2,10 +2,10 @@
 
 algo=nbody_brute_force
 
-MAX_THREAD=48
+MAX_THREAD=4
 
-N_PARTICULE=2000
-T_FINAL=3
+N_PARTICULE=1500
+T_FINAL=1
 
 date=$(date +"%d_%m_%y_%s")
 dirname=OpenMP_$algo\_$date

@@ -10,6 +10,9 @@ _Encore en travail_ :
 MPI : nbody_barnes_hut_v2  
 CUDA : nbody_brute_force  
 
+## Lancement
+./init.sh
+
 ## Resources
 
 https://github.com/Ligh7bringer/Nbody-parallel/tree/master/src/mpi  

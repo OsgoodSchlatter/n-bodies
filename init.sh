@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source /netfs/inf/trahay_f/opt/asr5_env.sh
+
 DISPLAY=
 #DISPLAY=-DDISPLAY
 
