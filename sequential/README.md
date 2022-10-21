@@ -5,15 +5,15 @@ nbody_brute_force nbody_barnes_hut
 
 ##Compilation
 make  
-Avec Eztrace : make CC="eztrace_cc gcc"  
+_Avec Eztrace_ : make CC="eztrace_cc gcc"  
 
 ##Lancement
 ./nbody_brute_force [nparticules=1500] [TFINAL=1]  
 ./nbody_barnes_hut [nparticules=1000] [TFINAL=1]  
 
-Avec Eztrace :  
+_Avec Eztrace_ :  
 eztrace ./nbody_brute_force [nparticules=1500] [TFINAL=1]  
 eztrace ./nbody_barnes_hut [nparticules=1000] [TFINAL=1]  
 
-Lire trace otf2 :  
+_Lire trace otf2_ :  
 vite nom_trace/eztrace_log.otf2  
