@@ -1,13 +1,13 @@
-#OpenMP
+# OpenMP
 
-##Version disponible
+## Version disponible
 nbody_brute_force
 
-##Compilation
+## Compilation
 make  
 _Avec Eztrace_ : make CC="eztrace_cc gcc"
 
-##Lancement
+## Lancement
 OMP_NUM_THREADS=[n_thread] ./nbody_brute_force [nparticules=1500] [TFINAL=1]
 
 _Avec Eztrace_ :

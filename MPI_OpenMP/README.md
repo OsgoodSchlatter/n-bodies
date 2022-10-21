@@ -1,13 +1,13 @@
-#MPI_OpenMP
+# MPI_OpenMP
 
-##Version disponible
+## Version disponible
 nbody_brute_force nbody_barnes_hut nbody_brute_force_async  
 
-##Compilation
+## Compilation
 make  
 _Avec Eztrace_ : make CC="eztrace_cc mpicc"  
 
-##Lancement
+## Lancement
 OMP_NUM_THREADS=[n_thread] mpirun -n [n_process] -f hosts ./nbody_brute_force [nparticules=1500] [TFINAL=1]  
 OMP_NUM_THREADS=[n_thread] mpirun -n [n_process] -f hosts ./nbody_barnes_hut [nparticules=1500] [TFINAL=1]  
 OMP_NUM_THREADS=[n_thread] mpirun -n [n_process] -f hosts ./nbody_brute_force_async [nparticules=1000] [TFINAL=1]  

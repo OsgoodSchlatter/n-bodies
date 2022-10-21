@@ -1,13 +1,13 @@
-#Sequential
+# Sequential
 
-##Version disponible
+## Version disponible
 nbody_brute_force nbody_barnes_hut  
 
-##Compilation
+## Compilation
 make  
 _Avec Eztrace_ : make CC="eztrace_cc gcc"  
 
-##Lancement
+## Lancement
 ./nbody_brute_force [nparticules=1500] [TFINAL=1]  
 ./nbody_barnes_hut [nparticules=1000] [TFINAL=1]  
 
