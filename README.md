@@ -6,7 +6,7 @@ OpenMP : nbody_brute_force
 MPI : nbody_brute_force nbody_brute_force_async nbody_barnes_hut  
 MPI_OpenMP : nbody_brute_force nbody_brute_force_async nbody_barnes_hut  
 
-__Encore en travail__ :  
+**Encore en travail** :  
 MPI : nbody_barnes_hut_v2  
 CUDA : nbody_brute_force  
 
