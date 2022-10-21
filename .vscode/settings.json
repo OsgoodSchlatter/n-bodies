@@ -1,0 +1,9 @@
+{
+  "files.associations": {
+    "type_traits": "c",
+    "nbody_tools.h": "c",
+    "nbody.h": "c",
+    "unordered_map": "c",
+    "xutil.h": "c"
+  }
+}

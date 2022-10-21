@@ -12,7 +12,6 @@
 #include <unistd.h>
 #include <omp.h>
 
-
 #ifdef DISPLAY
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -23,11 +22,10 @@
 #include "nbody_tools.h"
 
 FILE *f_out = NULL;
-FILE *f_resultat= NULL;
+FILE *f_resultat = NULL;
 
-
-int RESULTAT_OPENMP=0;
-int n_threads=1;
+int RESULTAT_OPENMP = 0;
+int n_threads = 1;
 int nparticles = 1500; /* number of particles */
 float T_FINAL = 1.0;   /* simulation end time */
 particle_t *particles;
@@ -39,13 +37,11 @@ double max_speed = 0;
 void init()
 {
 #ifdef DISPLAY
-    Display *theDisplay; /* These three variables are required to open the */
-    GC theGC;            /* particle plotting window.  They are externally */
-    Window theMain;      /* declared in ui.h but are also required here.   */
+  Display *theDisplay; /* These three variables are required to open the */
+  GC theGC;            /* particle plotting window.  They are externally */
+  Window theMain;      /* declared in ui.h but are also required here.   */
 #endif
 }
-
-
 
 /* compute the force that a particle with position (x_pos, y_pos) and mass 'mass'
  * applies to particle p
@@ -93,35 +89,34 @@ void move_particle(particle_t *p, double step)
   Update positions, velocity, and acceleration.
   Return local computations.
 */
-void all_move_particles(double step,int n_threads)
+void all_move_particles(double step, int n_threads)
 {
 
 #pragma omp parallel
+  {
+    /* First calculate force for particles. */
+    int i;
+#pragma omp for schedule(static)
+    for (i = 0; i < nparticles; i++)
     {
-        /* First calculate force for particles. */
-        int i;
-#pragma omp for schedule(static)
-        for (i = 0; i < nparticles; i++)
-        {
-            int j=0;
-            particles[i].x_force = 0;
-            particles[i].y_force = 0;
-            for (j = 0; j < nparticles; j++)
-            {
-                particle_t *p = &particles[j];
-                /* compute the force of particle j on particle i */
-                compute_force(&particles[i], p->x_pos, p->y_pos, p->mass);
-            }
-        }
-
-#pragma omp for schedule(static)
-        /* then move all particles and return statistics */
-        for (i = 0; i < nparticles; i++)
-        {
-            move_particle(&particles[i], step);
-        }
-
+      int j = 0;
+      particles[i].x_force = 0;
+      particles[i].y_force = 0;
+      for (j = 0; j < nparticles; j++)
+      {
+        particle_t *p = &particles[j];
+        /* compute the force of particle j on particle i */
+        compute_force(&particles[i], p->x_pos, p->y_pos, p->mass);
+      }
     }
+
+#pragma omp for schedule(static)
+    /* then move all particles and return statistics */
+    for (i = 0; i < nparticles; i++)
+    {
+      move_particle(&particles[i], step);
+    }
+  }
 }
 
 /* display all the particles */
@@ -154,7 +149,7 @@ void run_simulation(int n_threads)
     /* Update time. */
     t += dt;
     /* Move particles with the current and compute rms velocity. */
-    all_move_particles(dt,n_threads);
+    all_move_particles(dt, n_threads);
 
     /* Adjust dt based on maximum speed and acceleration--this
        simple rule tries to insure that no velocity will change
@@ -214,13 +209,13 @@ int main(int argc, char **argv)
   fclose(f_out);
 #endif
 
-/*  //TEST de OpenMP
-  omp_set_num_threads(4);
-#pragma omp parallel
-  {
-      int tid = omp_get_thread_num();
-      printf("OUI %d\n",tid);
-  }*/
+  /*  //TEST de OpenMP
+    omp_set_num_threads(4);
+  #pragma omp parallel
+    {
+        int tid = omp_get_thread_num();
+        printf("OUI %d\n",tid);
+    }*/
 
   printf("-----------------------------\n");
   printf("nparticles: %d\n", nparticles);
@@ -228,12 +223,13 @@ int main(int argc, char **argv)
   printf("-----------------------------\n");
   printf("Simulation took %lf s to complete\n", duration);
 
-if (RESULTAT_OPENMP==1){
+  if (RESULTAT_OPENMP == 1)
+  {
     FILE *f_resultat = fopen("../resultat/resultatBruteOpenMP.txt", "a");
     assert(f_resultat);
-    fprintf(f_resultat, "%d %f %d %f \n", nparticles,T_FINAL, n_threads ,duration );
+    fprintf(f_resultat, "%d %f %d %f \n", nparticles, T_FINAL, n_threads, duration);
     fclose(f_resultat);
-}
+  }
 
 #ifdef DISPLAY
   clear_display();

@@ -61,8 +61,8 @@ void init()
     init_node(root, NULL, XMIN, XMAX, YMIN, YMAX);
 #ifdef DISPLAY
     Display *theDisplay; /* These three variables are required to open the */
-  GC theGC;            /* particle plotting window.  They are externally */
-  Window theMain;      /* declared in ui.h but are also required here.   */
+    GC theGC;            /* particle plotting window.  They are externally */
+    Window theMain;      /* declared in ui.h but are also required here.   */
 #endif
 }
 
@@ -119,11 +119,11 @@ void compute_force_on_particle(node_t *n, particle_t *p)
       node's children.
       --> This result in a brute-force computation (complexity: O(n*n))
     */
-    int i;
-    for (i = 0; i < 4; i++)
-    {
-      compute_force_on_particle(&n->children[i], p);
-    }
+        int i;
+        for (i = 0; i < 4; i++)
+        {
+            compute_force_on_particle(&n->children[i], p);
+        }
 #else
         /* Use the Barnes-Hut algorithm to get an approximation */
         if (size / distance < THRESHOLD)
@@ -327,7 +327,7 @@ void all_move_particles(double step)
     }
     // MPI_Barrier(MPI_COMM_WORLD);
     // CHACUN A particles à jour
-    //MPI_Barrier(MPI_COMM_WORLD);
+    // MPI_Barrier(MPI_COMM_WORLD);
 
     if (comm_rank == 0)
     {
@@ -365,8 +365,8 @@ void all_move_particles(double step)
             // particles[i].mass=bcast_buff[i*5+4];
         }
     }
-    //MPI_Barrier(MPI_COMM_WORLD);
-    // ENVOYER ROOT POUR CHACUN
+    // MPI_Barrier(MPI_COMM_WORLD);
+    //  ENVOYER ROOT POUR CHACUN
     node_t *new_root2 = alloc_node();
     init_node(new_root2, NULL, XMIN, XMAX, YMIN, YMAX);
     int i;
@@ -408,9 +408,9 @@ void run_simulation()
         {
 #if DISPLAY
             node_t *n = root;
-      clear_display();
-      draw_node(n);
-      flush_display();
+            clear_display();
+            draw_node(n);
+            flush_display();
 #endif
         }
     }
@@ -491,7 +491,7 @@ int main(int argc, char **argv)
         /* Initialize thread data structures */
 #ifdef DISPLAY
         /* Open an X window to display the particles */
-    simple_init(100, 100, DISPLAY_SIZE, DISPLAY_SIZE);
+        simple_init(100, 100, DISPLAY_SIZE, DISPLAY_SIZE);
 #endif
 
         gettimeofday(&t1, NULL);
@@ -511,9 +511,9 @@ int main(int argc, char **argv)
 
 #ifdef DUMP_RESULT
         FILE *f_out = fopen("particles.log", "w");
-    assert(f_out);
-    print_particles(f_out, root);
-    fclose(f_out);
+        assert(f_out);
+        print_particles(f_out, root);
+        fclose(f_out);
 #endif
 
         printf("-----------------------------\n");
@@ -524,15 +524,15 @@ int main(int argc, char **argv)
 
 #ifdef DISPLAY
         node_t *n = root;
-    clear_display();
-    draw_node(n);
-    flush_display();
+        clear_display();
+        draw_node(n);
+        flush_display();
 
-    printf("Hit return to close the window.");
+        printf("Hit return to close the window.");
 
-    getchar();
-    /* Close the X window used to display the particles */
-    XCloseDisplay(theDisplay);
+        getchar();
+        /* Close the X window used to display the particles */
+        XCloseDisplay(theDisplay);
 #endif
     }
     return 0;
