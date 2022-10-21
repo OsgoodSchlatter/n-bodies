@@ -38,14 +38,14 @@ double max_speed = 0;
 
 void init()
 {
-  /* Nothing to do */
+#ifdef DISPLAY
+    Display *theDisplay; /* These three variables are required to open the */
+    GC theGC;            /* particle plotting window.  They are externally */
+    Window theMain;      /* declared in ui.h but are also required here.   */
+#endif
 }
 
-#ifdef DISPLAY
-Display *theDisplay; /* These three variables are required to open the */
-GC theGC;            /* particle plotting window.  They are externally */
-Window theMain;      /* declared in ui.h but are also required here.   */
-#endif
+
 
 /* compute the force that a particle with position (x_pos, y_pos) and mass 'mass'
  * applies to particle p
@@ -96,7 +96,7 @@ void move_particle(particle_t *p, double step)
 void all_move_particles(double step,int n_threads)
 {
 
-#pragma omp parallel num_threads(n_threads)
+#pragma omp parallel
     {
         /* First calculate force for particles. */
         int i;
@@ -180,15 +180,9 @@ int main(int argc, char **argv)
   {
     nparticles = atoi(argv[1]);
   }
-  if (argc >= 3)
+  if (argc == 3)
   {
     T_FINAL = atof(argv[2]);
-  }
-  if (argc >=4 ){
-      n_threads = atof(argv[3]);
-  }
-  if (argc ==5 ){
-      RESULTAT_OPENMP = atof(argv[4]);
   }
 
   init();

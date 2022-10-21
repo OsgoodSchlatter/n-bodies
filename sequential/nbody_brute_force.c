@@ -32,14 +32,14 @@ double max_speed = 0;
 
 void init()
 {
-  /* Nothing to do */
+#ifdef DISPLAY
+    Display *theDisplay; /* These three variables are required to open the */
+    GC theGC;            /* particle plotting window.  They are externally */
+    Window theMain;      /* declared in ui.h but are also required here.   */
+#endif
 }
 
-#ifdef DISPLAY
-Display *theDisplay; /* These three variables are required to open the */
-GC theGC;            /* particle plotting window.  They are externally */
-Window theMain;      /* declared in ui.h but are also required here.   */
-#endif
+
 
 /* compute the force that a particle with position (x_pos, y_pos) and mass 'mass'
  * applies to particle p
@@ -104,6 +104,8 @@ void all_move_particles(double step)
     }
   }
 
+    //printf("pos_x = %f\n",particles[0].x_pos);
+
   /* then move all particles and return statistics */
   for (i = 0; i < nparticles; i++)
   {
@@ -138,6 +140,7 @@ void run_simulation()
   double t = 0.0, dt = 0.01;
   while (t < T_FINAL && nparticles > 0)
   {
+      //printf("t = %f\n",t);
     /* Update time. */
     t += dt;
     /* Move particles with the current and compute rms velocity. */
@@ -146,6 +149,11 @@ void run_simulation()
     /* Adjust dt based on maximum speed and acceleration--this
        simple rule tries to insure that no velocity will change
        by more than 10% */
+      // for(int i = 0; i < nparticles; i++)
+      // {
+      //     printf("t = %f / i = %d / x_pos = %f / y_pos = %f / x_vel= %f / y_vel = %f / x_force = %f / y_force = %f\n",
+      //            t,i,particles[i].x_pos,particles[i].y_pos,particles[i].x_vel,particles[i].y_vel,particles[i].x_force,particles[i].y_force);
+      // }
 
     dt = 0.1 * max_speed / max_acc;
 

@@ -38,13 +38,14 @@ void init()
   init_alloc(8 * nparticles);
   root = malloc(sizeof(node_t));
   init_node(root, NULL, XMIN, XMAX, YMIN, YMAX);
-}
-
 #ifdef DISPLAY
-Display *theDisplay; /* These three variables are required to open the */
+    Display *theDisplay; /* These three variables are required to open the */
 GC theGC;            /* particle plotting window.  They are externally */
 Window theMain;      /* declared in ui.h but are also required here.   */
 #endif
+}
+
+
 
 /* compute the force that a particle with position (x_pos, y_pos) and mass 'mass'
  * applies to particle p
