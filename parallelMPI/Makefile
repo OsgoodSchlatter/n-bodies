@@ -2,7 +2,7 @@ CC	= mpicc
 CFLAGS	= -O0 -g -Wall
 LDFLAGS = -lm -lpthread -lX11 -fopenmp
 VERBOSE	=
-TARGET	= nbody_brute_force nbody_barnes_hut barnes_hut
+TARGET	= nbody_brute_force nbody_barnes_hut barnes_hut barnes_hut_v2
 OBJS	= ui.o xstuff.o nbody_tools.o nbody_alloc.o
 
 DISPLAY = -DDISPLAY
@@ -20,6 +20,9 @@ nbody_barnes_hut: nbody_barnes_hut.o $(OBJS)
 	$(CC) $(VERBOSE) -o $@ $< $(OBJS)  $(LDFLAGS)
 
 barnes_hut: barnes_hut.o $(OBJS)
+	$(CC) $(VERBOSE) -o $@ $< $(OBJS)  $(LDFLAGS)
+
+barnes_hut: barnes_hut_v2.o $(OBJS)
 	$(CC) $(VERBOSE) -o $@ $< $(OBJS)  $(LDFLAGS)
 
 %.o: %.c
