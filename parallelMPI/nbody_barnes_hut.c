@@ -46,13 +46,15 @@ double max_speed_local = 0;
 double sum_speed_sq_local = 0;
 
 
-int nParticulePerProcess;
+
 int n_caracteristic_shared;
 double** pToShare;
-int indexPToShare[4];
-double** recvBuffer;
-int indexBuffer[4];
+double** pToRecv;
+int indexPToShare[16];
+int indexPToRecv[16];
 int carac_to_share=7; //x_pos, y_pos;		/* position of the particle */ x_vel, y_vel;		/* velocity of the particle */ x_force, y_force;	/* gravitational forces that apply against this particle */ mass;
+int indexCommSend;
+int indexCommRecv;
 
 void init()
 {
@@ -60,20 +62,21 @@ void init()
     root = malloc(sizeof(node_t));
     init_node(root, NULL, XMIN, XMAX, YMIN, YMAX);
 
-    pToShare = malloc(sizeof(double)*4);
-    for(int i = 0; i < 4; i++)
+    pToShare = malloc(sizeof(double)*16);
+    for(int i = 0; i < 16; i++)
     {
         pToShare[i] = malloc(nparticles*sizeof(double)*carac_to_share);
     }
-    recvBuffer = malloc(sizeof(double)*4);
-    for(int i = 0; i < 4; i++)
+
+    pToRecv = malloc(sizeof(double)*16);
+    for(int i = 0; i < 16; i++)
     {
-        recvBuffer[i] = malloc(sizeof(double));
+        pToRecv[i] = malloc(nparticles*sizeof(double)*carac_to_share);
     }
 
 
 #ifdef DISPLAY
-    Display *theDisplay; /* These three variables are required to open the */
+  Display *theDisplay; /* These three variables are required to open the */
   GC theGC;            /* particle plotting window.  They are externally */
   Window theMain;      /* declared in ui.h but are also required here.   */
 #endif
@@ -248,16 +251,18 @@ void move_particle(particle_t *p, double step, node_t *new_root)
   }
   else
   {
-      pToShare[indexNode][indexPToShare[indexNode]*n_caracteristic_shared+0]=p->x_pos;
-      pToShare[indexNode][indexPToShare[indexNode]*n_caracteristic_shared+1]=p->y_pos;
-      pToShare[indexNode][indexPToShare[indexNode]*n_caracteristic_shared+2]=p->x_vel;
-      pToShare[indexNode][indexPToShare[indexNode]*n_caracteristic_shared+3]=p->y_vel;
-      pToShare[indexNode][indexPToShare[indexNode]*n_caracteristic_shared+4]=p->x_force;
-      pToShare[indexNode][indexPToShare[indexNode]*n_caracteristic_shared+5]=p->y_force;
-      pToShare[indexNode][indexPToShare[indexNode]*n_caracteristic_shared+6]=p->mass;
+      //printf("[%d/%d] p->x_pos %f p->y_pos %f\n",comm_rank,comm_size,p->x_pos,p->y_pos );
+      indexCommSend = comm_rank*4+indexNode;
+      pToShare[indexCommSend][indexPToShare[indexCommSend]*carac_to_share+0]=p->x_pos;
+      pToShare[indexCommSend][indexPToShare[indexCommSend]*carac_to_share+1]=p->y_pos;
+      pToShare[indexCommSend][indexPToShare[indexCommSend]*carac_to_share+2]=p->x_vel;
+      pToShare[indexCommSend][indexPToShare[indexCommSend]*carac_to_share+3]=p->y_vel;
+      pToShare[indexCommSend][indexPToShare[indexCommSend]*carac_to_share+4]=p->x_force;
+      pToShare[indexCommSend][indexPToShare[indexCommSend]*carac_to_share+5]=p->y_force;
+      pToShare[indexCommSend][indexPToShare[indexCommSend]*carac_to_share+6]=p->mass;
 
-      indexPToShare[indexNode]+=1;
-      indexPToShare[indexNode]+=1;
+      indexPToShare[indexCommSend]+=1;
+      //printf("++ [%d/%d] indexPToShare[%d]=%d\n",comm_rank,comm_size,indexNode,indexPToShare[indexNode]);
   }
 }
 
@@ -286,48 +291,80 @@ void move_particles_in_node(node_t *n, double step, node_t *new_root)
   }
 }
 
-void recvRecvSize(){
-    MPI_Request request1;
-    for (int i=0;i<4;i++){
-        if (comm_rank!=i){
-            //MPI_Send() comm_rank -> i
-            MPI_Isend(&indexPToShare[i], 1, MPI_INT, i, 0, MPI_COMM_WORLD,&request1);
-            //A essayer
-            //MPI_Irecv(&indexBuffer[i], 1 , MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE,&request1);
-        }
-    }
-    for (int i=0;i<4;i++){
-        if (comm_rank!=i){
-            //MPI_Irecv() i -> comm_rank
-            MPI_Recv(&indexBuffer[i], 1 , MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        }
-    }
-    MPI_Wait(&request1, MPI_STATUS_IGNORE);
+void recvRecvBuffer2(){
+  // for(int rank=0;rank<4;rank++){
+  //   if (comm_rank!=rank){
+  //     int indexCommSend=comm_rank*4+rank;
+  //     MPI_Sendrecv_replace(&pToShare[indexCommSend], indexPToShare[indexCommSend]*carac_to_share, MPI_DOUBLE, rank, 0, comm_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//comm_rank->rank
+  //     int indexCommRecv=rank*4+comm_rank;
+  //     MPI_Sendrecv_replace(&pToShare[indexCommRecv], indexPToShare[indexCommRecv]*carac_to_share, MPI_DOUBLE, comm_rank, 0, rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//rank->comm_rank
+  //   }
+  // }
+
+  if (comm_rank==0){
+    //send
+    MPI_Sendrecv_replace(&pToShare[1], indexPToShare[1]*carac_to_share, MPI_DOUBLE, 1, 0, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//0->1
+    MPI_Sendrecv_replace(&pToShare[2], indexPToShare[2]*carac_to_share, MPI_DOUBLE, 2, 0, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//0->2
+    MPI_Sendrecv_replace(&pToShare[3], indexPToShare[3]*carac_to_share, MPI_DOUBLE, 3, 0, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//0->3
+
+    //recv
+    MPI_Sendrecv_replace(&pToShare[4], indexPToShare[4]*carac_to_share, MPI_DOUBLE, 0, 0, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//1->0
+    MPI_Sendrecv_replace(&pToShare[8], indexPToShare[8]*carac_to_share, MPI_DOUBLE, 0, 0, 2, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//2->0
+    MPI_Sendrecv_replace(&pToShare[12], indexPToShare[12]*carac_to_share, MPI_DOUBLE, 0, 0, 3, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//3->0
+  }
+  if (comm_rank==1){
+    MPI_Sendrecv_replace(&pToShare[1], indexPToShare[1]*carac_to_share, MPI_DOUBLE, 1, 0, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//0->1
+    //send
+    MPI_Sendrecv_replace(&pToShare[4], indexPToShare[4]*carac_to_share, MPI_DOUBLE, 0, 0, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//1->0
+    MPI_Sendrecv_replace(&pToShare[6], indexPToShare[6]*carac_to_share, MPI_DOUBLE, 2, 0, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//1->2
+    MPI_Sendrecv_replace(&pToShare[7], indexPToShare[7]*carac_to_share, MPI_DOUBLE, 3, 0, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//1->3
+
+    MPI_Sendrecv_replace(&pToShare[9], indexPToShare[9]*carac_to_share, MPI_DOUBLE, 1, 0, 2, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//2->1
+    MPI_Sendrecv_replace(&pToShare[13], indexPToShare[13]*carac_to_share, MPI_DOUBLE, 1, 0, 3, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//3->1
+  }
+  if (comm_rank==2){
+    MPI_Sendrecv_replace(&pToShare[2], indexPToShare[2]*carac_to_share, MPI_DOUBLE, 2, 0, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//0->2
+    MPI_Sendrecv_replace(&pToShare[6], indexPToShare[6]*carac_to_share, MPI_DOUBLE, 2, 0, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//1->2
+
+    //send
+    MPI_Sendrecv_replace(&pToShare[8], indexPToShare[8]*carac_to_share, MPI_DOUBLE, 0, 0, 2, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//2->0
+    MPI_Sendrecv_replace(&pToShare[9], indexPToShare[9]*carac_to_share, MPI_DOUBLE, 1, 0, 2, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//2->1
+    MPI_Sendrecv_replace(&pToShare[11], indexPToShare[11]*carac_to_share, MPI_DOUBLE, 3, 0, 2, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//2->3
+
+    MPI_Sendrecv_replace(&pToShare[14], indexPToShare[14]*carac_to_share, MPI_DOUBLE, 2, 0, 3, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//3->2
+  }
+  if (comm_rank==3){
+    MPI_Sendrecv_replace(&pToShare[3], indexPToShare[3]*carac_to_share, MPI_DOUBLE, 3, 0, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//0->3
+    MPI_Sendrecv_replace(&pToShare[7], indexPToShare[7]*carac_to_share, MPI_DOUBLE, 3, 0, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//1->3
+    MPI_Sendrecv_replace(&pToShare[11], indexPToShare[11]*carac_to_share, MPI_DOUBLE, 3, 0, 2, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//2->3
+
+    //send
+    MPI_Sendrecv_replace(&pToShare[12], indexPToShare[12]*carac_to_share, MPI_DOUBLE, 0, 0, 3, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//3->0
+    MPI_Sendrecv_replace(&pToShare[13], indexPToShare[13]*carac_to_share, MPI_DOUBLE, 1, 0, 3, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//3->1
+    MPI_Sendrecv_replace(&pToShare[14], indexPToShare[14]*carac_to_share, MPI_DOUBLE, 2, 0, 3, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);//3->2
+  }
 }
 void recvRecvBuffer(){
+  MPI_Allgather(&indexPToShare[comm_rank*4], 4, MPI_INT, &indexPToRecv, 16, MPI_INT, MPI_COMM_WORLD);
 
-    for(int i = 0; i < 4; i++)
-    {
-        free(recvBuffer[i]);
-        recvBuffer[i] = malloc(nparticles*sizeof(double)*carac_to_share);
+  for(int rank=0;rank<4;rank++){
+    if (comm_rank!=rank){
+      indexCommSend=comm_rank*4+rank;//comm_rank->rank
+      printf("%d SEND %d DATA TO %d : %d\n",comm_rank, indexPToRecv[indexCommSend],rank,indexCommSend);
+      MPI_Send(&pToShare[indexCommSend], indexPToRecv[indexCommSend]*carac_to_share, MPI_DOUBLE, rank, 0, MPI_COMM_WORLD);
     }
-
-    MPI_Request request2;
-    for (int i=0;i<4;i++){
-        if (comm_rank!=i){
-            //MPI_Send() comm_rank -> i
-            MPI_Isend(&pToShare[i], indexBuffer[i]*n_caracteristic_shared, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,&request2);
-            //A essayer
-            //MPI_Irecv(&recvBuffer[i], indexBuffer[i]*n_caracteristic_shared, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE,&request2);
-        }
+  }
+  MPI_Request requests[3];
+  int i=0;
+  for(int rank=0;rank<4;rank++){
+    if (comm_rank!=rank){
+      indexCommRecv=rank*4+comm_rank;//rank->comm_rank
+      printf("%d RECV %d DATA FROM %d : %d\n",comm_rank, indexPToRecv[indexCommRecv],rank,indexCommRecv );
+      MPI_Irecv(&pToRecv[indexCommRecv], indexPToRecv[indexCommRecv]*carac_to_share, MPI_DOUBLE, rank, 0, MPI_COMM_WORLD, &requests[i]);
+      i++;
     }
-    for (int i=0;i<4;i++){
-        if (comm_rank!=i){
-            //MPI_Irecv() i -> comm_rank
-            MPI_Recv(&recvBuffer[i], indexBuffer[i]*n_caracteristic_shared, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-        }
-    }
-    MPI_Wait(&request2, MPI_STATUS_IGNORE);
+  }
+  MPI_Waitall(3, requests, MPI_STATUSES_IGNORE);
 }
 
 void insertNewParticule(node_t *new_root){
@@ -335,21 +372,22 @@ void insertNewParticule(node_t *new_root){
     particle_t *p;
     p = malloc(sizeof(particle_t));
     p->node=NULL;
-    for (int i = 0; i<4 ;i++){
+    for (int rank = 0; rank<4 ;rank++){
         //printf("[%d/%d] indexBuffer[%d] = %d\n",comm_rank,comm_size,i,indexBuffer[i]);
-        if (comm_rank!=i){
-            for (int j=0;j<indexBuffer[i];j++){
-                printf("[%d/%d] j = %d\n",comm_rank,comm_size,j);
-                p->x_pos=recvBuffer[i][n_caracteristic_shared*j+0];
-                p->y_pos=recvBuffer[i][n_caracteristic_shared*j+1];
-                p->x_vel=recvBuffer[i][n_caracteristic_shared*j+2];
-                p->y_vel=recvBuffer[i][n_caracteristic_shared*j+3];
-                p->x_force=recvBuffer[i][n_caracteristic_shared*j+4];
-                p->y_force=recvBuffer[i][n_caracteristic_shared*j+5];
-                p->mass=recvBuffer[i][n_caracteristic_shared*j+6];
-                printf("[%d/%d] new_root->x_max = %f new_root->x_min = %f\n",comm_rank,comm_size,new_root->x_max,new_root->x_min);
+        if (comm_rank!=rank){
+          indexCommRecv=rank*4+comm_rank;//recu de rank
+            for (int j=0;j<indexPToShare[indexCommRecv];j++){
+
+                p->x_pos=pToRecv[indexCommRecv][carac_to_share*j+0];
+                p->y_pos=pToRecv[indexCommRecv][carac_to_share*j+1];
+                p->x_vel=pToRecv[indexCommRecv][carac_to_share*j+2];
+                p->y_vel=pToRecv[indexCommRecv][carac_to_share*j+3];
+                p->x_force=pToRecv[indexCommRecv][carac_to_share*j+4];
+                p->y_force=pToRecv[indexCommRecv][carac_to_share*j+5];
+                p->mass=pToRecv[indexCommRecv][carac_to_share*j+6];
+                //printf("[%d/%d] new_root->x_max = %f new_root->x_min = %f , p->x_pos %f p->y_pos %f\n",comm_rank,comm_size,new_root->x_max,new_root->x_min,p->x_pos,p->y_pos);
                 insert_particle(p, new_root);
-                printf("[%d/%d] sender = %d, current_p = %d, p->x_pos = %f\n",comm_rank,comm_size,i,j,p->x_pos);
+              //  printf("[%d/%d] sender = %d, current_p = %d, p->x_pos = %f\n",comm_rank,comm_size,i,j,p->x_pos);
 
             }
         }
@@ -366,7 +404,7 @@ void insertNewParticule(node_t *new_root){
 void all_move_particles(double step)
 {
 
-    MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
 
     // On pourrait faire passer que x_force et y force dans cette partie
   compute_force_in_node(root);
@@ -384,20 +422,17 @@ void all_move_particles(double step)
     move_particles_in_node(root, step, new_root);
 
     //printf("[%d/%d] move_particule_in_node pass\n",comm_rank,comm_size);
+
     MPI_Barrier(MPI_COMM_WORLD);
+
 
     //S'envoyer les particules non intégrées + inserer dans les noeuds
     //S'envoyer les tailles des buffers indexPToShare
-    recvRecvSize();
-
-    //printf("[%d/%d] recvRecvSize pass\n",comm_rank,comm_size);
-    MPI_Barrier(MPI_COMM_WORLD);
 
     recvRecvBuffer();
 
-    //printf("[%d/%d] recvRecvBuffer pass\n",comm_rank,comm_size);
     MPI_Barrier(MPI_COMM_WORLD);
-
+    printf("[%d/%d] recvRecvBuffer pass\n",comm_rank,comm_size);
     insertNewParticule(new_root);
     //dechargerRecvBuffer() //use tableau[3] de recvBuffer
     //insertSharedParticules()
