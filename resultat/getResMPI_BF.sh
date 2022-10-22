@@ -1,10 +1,10 @@
 #!/bin/bash
 
-algo=nbody_brute_force
+algo=nbody_brute_force_async
 
 MAX_PROCESS=6
 
-N_PARTICULE=1500
+N_PARTICULE=3000
 T_FINAL=1
 
 date=$(date +"%d_%m_%y_%s")

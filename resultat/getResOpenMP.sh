@@ -2,10 +2,10 @@
 
 algo=nbody_brute_force
 
-MAX_THREAD=4
+MAX_THREAD=48
 
-N_PARTICULE=1500
-T_FINAL=1
+N_PARTICULE=7000
+T_FINAL=3
 
 date=$(date +"%d_%m_%y_%s")
 dirname=OpenMP_$algo\_$date
@@ -21,7 +21,7 @@ mkdir $dirname
 mkdir $dirname/log
 
 #openmp de chauffe
-OMP_NUM_THREADS=2 ../OpenMP/$algo $N_PARTICULE $T_FINAL
+OMP_NUM_THREADS=40 ../OpenMP/$algo $N_PARTICULE $T_FINAL
 
 #Param init
 echo \#MAX_THREAD N_PARTICULE T_FINAL > ./$dirname/param.data
@@ -30,13 +30,13 @@ echo $MAX_THREAD $N_PARTICULE $T_FINAL > ./$dirname/param.data >&1
 echo \#n_thread t_seq t_parallel > ./$dirname/res_$date.data
 
 #echo $n_process $MAX_THREAD
-OMP_NUM_THREADS=1 ../OpenMP/$algo $N_PARTICULE $T_FINAL > ./$dirname/log/log_seq.log >&1
+OMP_NUM_THREADS=24 ../OpenMP/$algo $N_PARTICULE $T_FINAL > ./$dirname/log/log_seq.log >&1
 
 seq_duration=$(cat ./$dirname/log/log_seq.log | grep "Simulation" | cut -d " " -f 3)
 
-echo  1 $seq_duration $seq_duration >> ./$dirname/res_$date.data
+echo  24 $seq_duration $seq_duration >> ./$dirname/res_$date.data
 
-for n_thread in $(seq 2 $MAX_THREAD)
+for n_thread in $(seq 24 $MAX_THREAD)
 do
     OMP_NUM_THREADS=$n_thread ../OpenMP/$algo $N_PARTICULE $T_FINAL > ./$dirname/log/log_$n_thread.log >&1
 

@@ -1,13 +1,13 @@
 #!/bin/bash
 
 #nbody_brute_force nbody_barnes_hut
-algo=nbody_brute_force
+algo=nbody_brute_force_async
 
-MAX_PROCESS=4
+MAX_PROCESS=6
 THREAD_VARIABLE=0
-MAX_THREAD=4
+MAX_THREAD=6
 
-N_PARTICULE=1500
+N_PARTICULE=3000
 T_FINAL=1
 
 date=$(date +"%d_%m_%y_%s")
